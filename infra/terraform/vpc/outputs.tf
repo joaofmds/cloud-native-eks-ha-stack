@@ -18,9 +18,19 @@ output "public_subnet_ids" {
   description = "IDs of the public subnets"
 }
 
+output "public_subnet_cidrs" {
+  value       = [for s in aws_subnet.public : s.cidr_block]
+  description = "CIDR blocks allocated to the public subnets"
+}
+
 output "private_subnet_ids" {
   value       = values(aws_subnet.private)[*].id
   description = "IDs of the private subnets"
+}
+
+output "private_subnet_cidrs" {
+  value       = [for s in aws_subnet.private : s.cidr_block]
+  description = "CIDR blocks allocated to the private subnets"
 }
 
 output "intra_subnet_ids" {

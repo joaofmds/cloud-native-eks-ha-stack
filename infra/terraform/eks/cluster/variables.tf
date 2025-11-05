@@ -81,6 +81,12 @@ variable "security_group_additional_ingress" {
   default = []
 }
 
+variable "node_security_group_id" {
+  description = "Security group ID of the worker nodes to allow API server access"
+  type        = string
+  default     = null
+}
+
 variable "enable_core_addons" {
   description = "Enable core EKS add-ons (VPC-CNI, CoreDNS, kube-proxy)"
   type        = bool

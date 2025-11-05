@@ -50,6 +50,17 @@ variable "nodegroup_subnet_ids" {
 
 # ── Cluster Access Configuration ───────────────────────────────────────
 
+variable "public_subnet_cidr_blocks" {
+  description = "CIDR blocks for public subnets that will host load balancers"
+  type        = list(string)
+  default     = []
+}
+
+variable "vpc_cidr_block" {
+  description = "Primary CIDR block associated with the VPC"
+  type        = string
+}
+
 variable "endpoint_public_access" {
   description = "Enable public endpoint access for the EKS cluster API"
   type        = bool

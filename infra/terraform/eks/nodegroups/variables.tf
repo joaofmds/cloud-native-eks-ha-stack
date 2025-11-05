@@ -34,6 +34,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "default_security_group_id" {
+  description = "Security group automatically associated with managed node groups when no custom launch template is provided"
+  type        = string
+  default     = null
+}
+
 variable "nodegroups" {
   description = <<EOT
 Map of node group configs. Example in README.

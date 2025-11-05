@@ -56,6 +56,11 @@ output "cluster_security_group_id" {
   value       = var.enable_nodegroups ? module.cluster.cluster_security_group_id : null
 }
 
+output "node_security_group_id" {
+  description = "Security group ID associated with the managed node groups"
+  value       = local.create_nodegroups ? aws_security_group.nodes[0].id : null
+}
+
 output "cluster_iam_role_arn" {
   description = "IAM role ARN associated with the EKS cluster"
   value       = var.enable_nodegroups ? module.cluster.cluster_iam_role_arn : null

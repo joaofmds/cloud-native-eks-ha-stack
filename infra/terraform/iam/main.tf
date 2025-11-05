@@ -43,11 +43,19 @@ resource "aws_iam_role_policy" "generic_inline" {
 
 resource "aws_iam_role_policy_attachment" "generic_attach" {
   for_each = {
-    for k, v in var.generic_irsa_roles : k => { name = k, arns = v.managed_policy_arns }
-    if length(try(v.managed_policy_arns, [])) > 0
+    for combo in flatten([
+      for key, cfg in var.generic_irsa_roles : [
+        for idx, policy in try(cfg.managed_policy_arns, []) : {
+          key        = "${key}-${idx}"
+          role_key   = key
+          policy_arn = policy
+        }
+      ]
+    ]) : combo.key => combo
   }
-  role       = aws_iam_role.generic[each.value.name].name
-  policy_arn = element(each.value.arns, 0)
+
+  role       = aws_iam_role.generic[each.value.role_key].name
+  policy_arn = each.value.policy_arn
 }
 
 locals {

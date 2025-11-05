@@ -25,6 +25,18 @@ resource "aws_security_group" "cluster" {
   tags = merge(local.common_tags, { Name = "${var.name}-cluster-sg" })
 }
 
+resource "aws_security_group_rule" "cluster_from_nodes" {
+  count = var.node_security_group_id != null ? 1 : 0
+
+  description              = "Allow worker nodes to communicate with the Kubernetes API"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cluster.id
+  source_security_group_id = var.node_security_group_id
+}
+
 resource "aws_security_group_rule" "cluster_extra_ingress_cidr" {
   for_each = {
     for i, r in var.security_group_additional_ingress : i => r if length(try(r.cidr_blocks, [])) > 0

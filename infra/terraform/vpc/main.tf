@@ -35,6 +35,22 @@ locals {
     cidrsubnet(var.cidr_block, var.subnet_newbits, i)
   ] : []
 
+  eks_cluster_tags = { for cluster_name, value in var.eks_cluster_tags : "kubernetes.io/cluster/${cluster_name}" => value }
+
+  public_subnet_extra_tags = length(local.eks_cluster_tags) > 0 ? merge(
+    {
+      "kubernetes.io/role/elb" = "1"
+    },
+    local.eks_cluster_tags,
+  ) : {}
+
+  private_subnet_extra_tags = length(local.eks_cluster_tags) > 0 ? merge(
+    {
+      "kubernetes.io/role/internal-elb" = "1"
+    },
+    local.eks_cluster_tags,
+  ) : {}
+  
   common_tags = merge({
     "ManagedBy"   = "Terraform",
     "Project"     = var.project,

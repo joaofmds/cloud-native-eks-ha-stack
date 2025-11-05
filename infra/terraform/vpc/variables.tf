@@ -23,6 +23,11 @@ variable "tags" {
   default = {}
 }
 
+variable "eks_cluster_tags" {
+  description = "Map of EKS cluster name => tag value ('owned' or 'shared') applied to public/private subnets"
+  type        = map(string)
+  default     = {}
+}
 
 variable "cidr_block" {
   description = "CIDR for the VPC (e.g. 10.0.0.0/16)"
