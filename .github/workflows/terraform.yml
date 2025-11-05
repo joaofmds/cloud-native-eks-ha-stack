@@ -1,0 +1,157 @@
+name: Terraform
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform.yml'
+      - 'Makefile'
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform.yml'
+      - 'Makefile'
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Terraform environment directory under infra/terraform/envs'
+        required: false
+        default: 'dev'
+      apply:
+        description: 'Run terraform apply after a successful plan'
+        required: false
+        default: 'false'
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: '1.5.7'
+  AWS_REGION: us-east-1
+  TF_WORKSPACE: ${{ github.event.inputs.workspace || 'dev' }}
+  TF_DIRECTORY: ${{ format('infra/terraform/envs/{0}', github.event.inputs.workspace || 'dev') }}
+
+jobs:
+  fmt:
+    name: Terraform fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform fmt check
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+  validate:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_DIRECTORY }}
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_DIRECTORY }}
+        run: terraform validate
+
+  tflint:
+    name: Terraform lint
+    runs-on: ubuntu-latest
+    needs: fmt
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.3
+
+      - name: Run TFLint
+        working-directory: infra/terraform
+        run: |
+          tflint --init
+          tflint
+
+  plan_apply:
+    name: Terraform plan/apply
+    runs-on: ubuntu-latest
+    needs: [validate, tflint]
+    if: ${{ needs.validate.result == 'success' }}
+    environment:
+      name: terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_DIRECTORY }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        id: plan
+        working-directory: ${{ env.TF_DIRECTORY }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_DIRECTORY }}/tfplan
+
+      - name: Terraform apply
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event.inputs.apply == 'true' }}
+        working-directory: ${{ env.TF_DIRECTORY }}
+        run: terraform apply -input=false tfplan

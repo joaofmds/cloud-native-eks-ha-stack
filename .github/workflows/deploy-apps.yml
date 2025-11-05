@@ -1,0 +1,86 @@
+name: Deploy applications
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'k6/**'
+      - '.github/workflows/deploy-apps.yml'
+      - 'Makefile'
+  workflow_dispatch:
+    inputs:
+      helmfile_env:
+        description: 'Value for HELMFILE_ENVIRONMENT'
+        required: false
+        default: 'default'
+      run_k6:
+        description: 'Run k6 test suite after helmfile apply'
+        required: false
+        default: 'true'
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  HELMFILE_ENVIRONMENT: ${{ github.event.inputs.helmfile_env || 'default' }}
+
+jobs:
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_EKS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.30.0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Setup Helmfile
+        uses: mamezou-tech/setup-helmfile@v1
+        with:
+          helmfile-version: v0.158.0
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ secrets.AWS_EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Helmfile apply
+        working-directory: apps
+        env:
+          HELMFILE_ENVIRONMENT: ${{ env.HELMFILE_ENVIRONMENT }}
+        run: |
+          helmfile --environment "$HELMFILE_ENVIRONMENT" apply
+
+      - name: Run k6 tests
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_k6 != 'false' }}
+        run: |
+          set -euo pipefail
+          if compgen -G "k6/*.js" > /dev/null; then
+            for script in k6/*.js; do
+              echo "Running k6 script: $script"
+              k6 run "$script"
+            done
+          else
+            echo "No k6 scripts found in k6/."
+          fi
