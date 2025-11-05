@@ -1,16 +1,16 @@
 output "public_zone_id" {
   description = "ID of the public hosted zone (null if not created)"
-  value       = try(aws_route53_zone.public[0].zone_id, null)
+  value       = local.public_zone_id
 }
 
 output "public_zone_arn" {
   description = "ARN of the public hosted zone (null if not created)"
-  value       = try(aws_route53_zone.public[0].arn, null)
+  value       = local.public_zone_arn
 }
 
 output "public_zone_name_servers" {
   description = "Name servers for the public hosted zone (null if not created)"
-  value       = try(aws_route53_zone.public[0].name_servers, null)
+  value       = local.public_zone_name_servers
 }
 
 output "private_zone_id" {
@@ -25,7 +25,7 @@ output "private_zone_arn" {
 
 output "zone_name" {
   description = "The domain name of the hosted zone"
-  value       = var.zone_name
+  value       = local.public_zone_name
 }
 
 output "query_log_group_name" {

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: storageclass-gp3
+description: Creates an AWS gp3 StorageClass backed by the EBS CSI driver
+version: 0.1.0
+appVersion: "1.0.0"
+type: application

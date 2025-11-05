@@ -29,9 +29,19 @@ output "loki_bucket_name" {
   value       = module.s3_loki.bucket_name
 }
 
+output "tempo_bucket_name" {
+  description = "S3 bucket that stores Tempo traces"
+  value       = module.s3_tempo.bucket_name
+}
+
 output "route53_private_zone_id" {
   description = "ID of the private Route53 hosted zone"
   value       = module.route53.private_zone_id
+}
+
+output "route53_public_zone_id" {
+  description = "ID of the public Route53 hosted zone"
+  value       = module.route53.public_zone_id
 }
 
 output "cluster_autoscaler_role_arn" {
@@ -47,4 +57,24 @@ output "aws_lb_controller_role_arn" {
 output "loki_s3_role_arn" {
   description = "IAM role ARN that grants Loki access to S3"
   value       = module.iam.loki_s3_role_arn
+}
+
+output "tempo_s3_role_arn" {
+  description = "IAM role ARN that grants Tempo access to S3"
+  value       = module.iam.tempo_s3_role_arn
+}
+
+output "external_dns_role_arn" {
+  description = "IAM role ARN for ExternalDNS"
+  value       = module.iam.external_dns_role_arn
+}
+
+output "cert_manager_role_arn" {
+  description = "IAM role ARN for cert-manager"
+  value       = module.iam.cert_manager_role_arn
+}
+
+output "ebs_csi_driver_role_arn" {
+  description = "IAM role ARN used by the AWS EBS CSI driver"
+  value       = module.iam.ebs_csi_driver_role_arn
 }

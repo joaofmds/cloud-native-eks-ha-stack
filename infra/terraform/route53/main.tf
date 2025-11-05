@@ -10,6 +10,21 @@ locals {
   }, var.tags)
 
   zone_tags = merge(local.common_tags, { Name = var.zone_name })
+  using_existing_public_zone = !var.create_public_zone && var.existing_public_zone_id != null
+}
+
+data "aws_route53_zone" "existing_public" {
+  count        = local.using_existing_public_zone ? 1 : 0
+  zone_id      = var.existing_public_zone_id
+  private_zone = false
+}
+
+locals {
+  public_zone_id = var.create_public_zone ? try(aws_route53_zone.public[0].zone_id, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].zone_id : null)
+  public_zone_arn = var.create_public_zone ? try(aws_route53_zone.public[0].arn, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].arn : null)
+  public_zone_name_servers = var.create_public_zone ? try(aws_route53_zone.public[0].name_servers, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].name_servers : null)
+  public_zone_name = var.create_public_zone ? try(aws_route53_zone.public[0].name, var.zone_name) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].name : var.zone_name)
+  private_zone_id = var.create_private_zone ? try(aws_route53_zone.private[0].zone_id, null) : null
 }
 
 resource "aws_route53_zone" "public" {
@@ -92,14 +107,14 @@ resource "aws_kms_key" "dnssec" {
 
 resource "aws_route53_key_signing_key" "this" {
   count                      = var.enable_dnssec && var.create_public_zone ? 1 : 0
-  hosted_zone_id             = aws_route53_zone.public[0].zone_id
+  hosted_zone_id             = local.public_zone_id
   key_management_service_arn = var.dnssec_kms_key_arn != null ? var.dnssec_kms_key_arn : aws_kms_key.dnssec[0].arn
   name                       = replace(var.zone_name, ".", "-")
 }
 
 resource "aws_route53_hosted_zone_dnssec" "this" {
   count          = var.enable_dnssec && var.create_public_zone ? 1 : 0
-  hosted_zone_id = aws_route53_zone.public[0].zone_id
+  hosted_zone_id = local.public_zone_id
   depends_on     = [aws_route53_key_signing_key.this]
 }
 
@@ -129,13 +144,13 @@ resource "aws_cloudwatch_log_resource_policy" "route53" {
 resource "aws_route53_query_log" "this" {
   count                    = var.enable_query_logging && var.create_public_zone ? 1 : 0
   cloudwatch_log_group_arn = aws_cloudwatch_log_group.query_logs[0].arn
-  zone_id                  = aws_route53_zone.public[0].zone_id
+  zone_id                  = local.public_zone_id
   depends_on               = [aws_cloudwatch_log_resource_policy.route53]
 }
 
 resource "aws_route53_record" "apex_a" {
-  count   = var.apex_alias != null && var.create_public_zone ? 1 : 0
-  zone_id = aws_route53_zone.public[0].zone_id
+  count   = var.apex_alias != null && local.public_zone_id != null ? 1 : 0
+  zone_id = local.public_zone_id
   name    = var.zone_name
   type    = "A"
   alias {
@@ -146,8 +161,8 @@ resource "aws_route53_record" "apex_a" {
 }
 
 resource "aws_route53_record" "apex_aaaa" {
-  count   = var.apex_alias != null && var.create_public_zone && try(var.apex_alias.create_aaaa, true) ? 1 : 0
-  zone_id = aws_route53_zone.public[0].zone_id
+  count   = var.apex_alias != null && local.public_zone_id != null && try(var.apex_alias.create_aaaa, true) ? 1 : 0
+  zone_id = local.public_zone_id
   name    = var.zone_name
   type    = "AAAA"
   alias {
@@ -169,8 +184,8 @@ locals {
 }
 
 resource "aws_route53_record" "alias_records_a" {
-  for_each = var.create_public_zone ? { for i, r in local.additional_aliases : i => r if r.type == "A" } : {}
-  zone_id  = aws_route53_zone.public[0].zone_id
+  for_each = local.public_zone_id != null ? { for i, r in local.additional_aliases : i => r if r.type == "A" } : {}
+  zone_id  = local.public_zone_id
   name     = each.value.name
   type     = "A"
   alias {
@@ -181,8 +196,8 @@ resource "aws_route53_record" "alias_records_a" {
 }
 
 resource "aws_route53_record" "alias_records_aaaa" {
-  for_each = var.create_public_zone ? { for i, r in local.additional_aliases : i => r if r.aaaa } : {}
-  zone_id  = aws_route53_zone.public[0].zone_id
+  for_each = local.public_zone_id != null ? { for i, r in local.additional_aliases : i => r if r.aaaa } : {}
+  zone_id  = local.public_zone_id
   name     = each.value.name
   type     = "AAAA"
   alias {
@@ -202,8 +217,8 @@ locals {
 }
 
 resource "aws_route53_record" "simple" {
-  for_each = { for i, r in local.simple_records : i => r }
-  zone_id  = var.create_public_zone ? aws_route53_zone.public[0].zone_id : aws_route53_zone.private[0].zone_id
+  for_each = (local.public_zone_id != null || local.private_zone_id != null) ? { for i, r in local.simple_records : i => r } : {}
+  zone_id  = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name     = each.value.name
   type     = each.value.type
   ttl      = each.value.ttl
@@ -222,8 +237,8 @@ resource "aws_route53_health_check" "failover" {
 }
 
 resource "aws_route53_record" "failover" {
-  for_each       = { for i, r in var.failover_records : i => r }
-  zone_id        = var.create_public_zone ? aws_route53_zone.public[0].zone_id : aws_route53_zone.private[0].zone_id
+  for_each       = (local.public_zone_id != null || local.private_zone_id != null) ? { for i, r in var.failover_records : i => r } : {}
+  zone_id        = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name           = contains(each.value.name, ".") ? each.value.name : "${each.value.name}.${var.zone_name}"
   type           = each.value.type
   set_identifier = each.value.set_identifier
@@ -236,8 +251,8 @@ resource "aws_route53_record" "failover" {
 }
 
 resource "aws_route53_record" "acm" {
-  for_each = var.acm_validation_records
-  zone_id  = var.create_public_zone ? aws_route53_zone.public[0].zone_id : aws_route53_zone.private[0].zone_id
+  for_each = (local.public_zone_id != null || local.private_zone_id != null) ? var.acm_validation_records : {}
+  zone_id  = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name     = each.key
   type     = "CNAME"
   ttl      = 300
@@ -245,8 +260,8 @@ resource "aws_route53_record" "acm" {
 }
 
 resource "aws_route53_record" "delegations" {
-  for_each = var.create_public_zone ? var.delegate_subdomains : {}
-  zone_id  = aws_route53_zone.public[0].zone_id
+  for_each = local.public_zone_id != null ? var.delegate_subdomains : {}
+  zone_id  = local.public_zone_id
   name     = each.key
   type     = "NS"
   ttl      = 172800

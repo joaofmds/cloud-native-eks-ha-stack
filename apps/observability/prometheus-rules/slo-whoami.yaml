@@ -2,12 +2,13 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: whoami-slo-rules
-  namespace: observability
+  namespace: monitoring
   labels:
     app.kubernetes.io/name: whoami-slo-rules
     app.kubernetes.io/component: monitoring
     app.kubernetes.io/part-of: observability
-    prometheus: kube-prometheus
+    prometheus: kube-prometheus-stack
+    release: kube-prometheus-stack
     role: alert-rules
 spec:
   groups:

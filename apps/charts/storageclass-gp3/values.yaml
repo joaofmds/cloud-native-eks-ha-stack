@@ -1,0 +1,7 @@
+storageClass:
+  name: gp3
+  makeDefault: true
+  allowVolumeExpansion: true
+  parameters:
+    type: gp3
+  volumeBindingMode: WaitForFirstConsumer
