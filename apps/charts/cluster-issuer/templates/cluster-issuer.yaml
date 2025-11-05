@@ -1,57 +1,27 @@
-apiVersion: cert-manager.io/v1apiVersion: cert-manager.io/v1
-
-kind: ClusterIssuerkind: ClusterIssuer
-
-metadata:metadata:
-
-  name: {{ .Values.name | default "letsencrypt-dns01" }}name: letsencrypt-dns01
-
-  labels:spec:
-
-    {{- include "cluster-issuer.labels" . | nindent 4 }}acme:
-
-spec:email: {{ required "email is required" .Values.email }}
-
-  acme:server: https://acme-v02.api.letsencrypt.org/directory
-
-    email: {{ required "email is required" .Values.email }}privateKeySecretRef:
-
-    server: {{ .Values.server | default "https://acme-v02.api.letsencrypt.org/directory" }}name: acme-account-key
-
-    privateKeySecretRef:solvers:
-
-      name: {{ .Values.privateKeySecretName | default "acme-account-key" }}- dns01:
-
-    solvers:route53:
-
-    - dns01:region: {{ required "region is required" .Values.region | quote }}
-
-        route53:hostedZoneID: {{ required "hostedZoneID is required" .Values.hostedZoneID | quote }}
-
-          region: {{ required "region is required" .Values.region | quote }}# Leave roleARN empty to use IRSA on the serviceAccount that runs cert-manager
-
-          hostedZoneID: {{ required "hostedZoneID is required" .Values.hostedZoneID | quote }}role: {}
-
-          {{- if .Values.roleARN }}selector:
-
-          roleARN: {{ .Values.roleARN | quote }}dnsZones:
-
-          {{- end }}{{- if .Values.zones }}
-
-      selector:{{- range .Values.zones }}
-
-        dnsZones:- {{ . | quote }}
-
-        {{- if .Values.zones }}{{- end }}
-
-        {{- range .Values.zones }}{{- else }}
-
-        - {{ . | quote }}- "" # match all if not provided
-
-        {{- end }}{{- end }}
-
-        {{- else }}```
-
-        - "" # match all zones if not provided
-
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.name | default (include "cluster-issuer.fullname" .) }}
+  labels:
+    {{- include "cluster-issuer.labels" . | nindent 4 }}
+spec:
+  acme:
+    email: {{ required "email is required" .Values.email }}
+    server: {{ .Values.server | default "https://acme-v02.api.letsencrypt.org/directory" }}
+    privateKeySecretRef:
+      name: {{ .Values.privateKeySecretName | default "acme-account-key" }}
+    solvers:
+      - dns01:
+          route53:
+            region: {{ required "region is required" .Values.region | quote }}
+            hostedZoneID: {{ required "hostedZoneID is required" .Values.hostedZoneID | quote }}
+            {{- if .Values.roleARN }}
+            role: {{ .Values.roleARN | quote }}
+            {{- end }}
+        {{- if .Values.zones }}
+        selector:
+          dnsZones:
+            {{- range .Values.zones }}
+            - {{ . | quote }}
+            {{- end }}
         {{- end }}

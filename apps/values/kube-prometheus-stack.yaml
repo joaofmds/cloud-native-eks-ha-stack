@@ -1,11 +1,66 @@
 defaultRules:
   create: true
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeScheduler: false
+    kubeProxy: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  admissionWebhooks:
+    patch:
+      podDisruptionBudget:
+        enabled: true
+      failurePolicy: Fail
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
 prometheus:
   serviceMonitorSelectorNilUsesHelmValues: false
   podMonitorSelectorNilUsesHelmValues: false
   prometheusSpec:
     retention: 15d
+    retentionSize: 45GiB
     scrapeInterval: 30s
+    evaluationInterval: 30s
+    enableAdminAPI: false
+    walCompression: true
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    priorityClassName: system-cluster-critical
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -14,16 +69,18 @@ prometheus:
           resources:
             requests:
               storage: 50Gi
-    resources:
-      requests:
-        cpu: 500m
-        memory: 1Gi
-      limits:
-        cpu: 2
-        memory: 4Gi
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
+            app.kubernetes.io/instance: kube-prometheus-stack
 alertmanager:
   alertmanagerSpec:
     replicas: 2
+    retention: 120h
     storage:
       volumeClaimTemplate:
         spec:
@@ -32,6 +89,21 @@ alertmanager:
           resources:
             requests:
               storage: 10Gi
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 512Mi
 grafana:
   adminUser: admin
   adminPassword: {{ requiredEnv "GRAFANA_ADMIN_PASSWORD" }}
@@ -44,6 +116,8 @@ grafana:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
       kubernetes.io/tls-acme: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
     hosts:
       - grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
     tls:
@@ -54,15 +128,52 @@ grafana:
     enabled: true
     storageClassName: gp3
     size: 5Gi
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 472
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    allowPrivilegeEscalation: false
   additionalDataSources:
     - name: Loki
       type: loki
+      access: proxy
       url: http://loki.monitoring.svc.cluster.local:3100
     - name: Tempo
       type: tempo
+      access: proxy
       url: http://tempo.monitoring.svc.cluster.local:3100
-grafana.ini:
-  server:
-    root_url: https://grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
-  auth.anonymous:
-    enabled: false
+  grafana.ini:
+    server:
+      root_url: https://grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
+    auth.anonymous:
+      enabled: false
+    security:
+      disable_gravatar: true
+      cookie_secure: true
+      strict_transport_security: true
+    users:
+      allow_sign_up: false
+    analytics:
+      reporting_enabled: false
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 200m
+      memory: 300Mi
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

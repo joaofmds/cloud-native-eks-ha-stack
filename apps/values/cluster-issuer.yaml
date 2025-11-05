@@ -1,0 +1,8 @@
+name: letsencrypt-prod
+email: {{ requiredEnv "ACME_EMAIL" }}
+server: https://acme-v02.api.letsencrypt.org/directory
+privateKeySecretName: letsencrypt-prod-account-key
+region: {{ requiredEnv "AWS_REGION" }}
+hostedZoneID: {{ requiredEnv "PUBLIC_HOSTED_ZONE_ID" }}
+zones:
+  - {{ requiredEnv "PUBLIC_HOSTED_ZONE" }}

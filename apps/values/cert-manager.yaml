@@ -1,5 +1,9 @@
 installCRDs: true
 replicaCount: 2
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
 serviceAccount:
   annotations:
     eks.amazonaws.com/role-arn: {{ requiredEnv "CERT_MANAGER_IAM_ROLE_ARN" }}
@@ -8,6 +12,27 @@ podDnsConfig:
   nameservers:
     - 1.1.1.1
     - 8.8.8.8
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 1001
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  capabilities:
+    drop:
+      - ALL
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
 extraArgs:
   - --cluster-resource-namespace=cert-manager
   - --enable-certificate-owner-ref=true
@@ -16,6 +41,57 @@ prometheus:
   servicemonitor:
     enabled: true
 webhook:
+  replicaCount: 2
   timeoutSeconds: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1001
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
 cainjector:
   replicaCount: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1001
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1

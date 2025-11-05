@@ -1,5 +1,9 @@
 loki:
   auth_enabled: false
+  server:
+    log_level: info
+  analytics:
+    reporting_enabled: false
   commonConfig:
     replication_factor: 2
   storage_config:
@@ -7,6 +11,7 @@ loki:
       s3: s3://{{ requiredEnv "LOKI_S3_BUCKET" }}
       region: {{ requiredEnv "AWS_REGION" }}
       s3forcepathstyle: true
+      sse_encryption: true
     boltdb_shipper:
       shared_store: aws
       active_index_directory: /var/loki/index
@@ -27,14 +32,55 @@ loki:
         bucketnames: {{ requiredEnv "LOKI_S3_BUCKET" }}
         region: {{ requiredEnv "AWS_REGION" }}
         s3forcepathstyle: true
+  limits_config:
+    retention_period: 168h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 32
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    max_query_parallelism: 32
   compactor:
     shared_store: s3
+    retention_enabled: true
+    working_directory: /var/loki/compactor
+    compaction_interval: 10m
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 10001
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 read:
   replicaCount: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
 write:
   replicaCount: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
 backend:
   replicaCount: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
 persistence:
   enabled: true
   size: 20Gi
@@ -45,3 +91,5 @@ serviceAccount:
     eks.amazonaws.com/role-arn: {{ requiredEnv "LOKI_IAM_ROLE_ARN" }}
 serviceMonitor:
   enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack

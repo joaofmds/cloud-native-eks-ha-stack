@@ -1,11 +1,27 @@
 tempo:
+  replicaCount: 3
   serviceAccount:
     create: true
     annotations:
       eks.amazonaws.com/role-arn: {{ requiredEnv "TEMPO_IAM_ROLE_ARN" }}
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 10001
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   storage:
     trace:
       backend: s3
+      block:
+        bloom_filter_false_positive: 0.01
+        index_downsample_bytes: 1048576
+        version: v2
+      retention: 168h
       s3:
         bucket: {{ requiredEnv "TEMPO_S3_BUCKET" }}
         region: {{ requiredEnv "AWS_REGION" }}
@@ -13,6 +29,10 @@ tempo:
         s3forcepathstyle: true
   metricsGenerator:
     enabled: true
+    scrapeInterval: 30s
+    storage:
+      remoteWrite:
+        - url: http://prometheus-operated.monitoring.svc.cluster.local:9090/api/v1/write
   resources:
     requests:
       cpu: 200m
@@ -34,3 +54,13 @@ tempo:
       enabled: true
   serviceMonitor:
     enabled: true
+    additionalLabels:
+      release: kube-prometheus-stack
+  searchEnabled: true
+  retention: 168h
+distributor:
+  replicaCount: 2
+ingester:
+  replicaCount: 2
+queryFrontend:
+  replicaCount: 2
