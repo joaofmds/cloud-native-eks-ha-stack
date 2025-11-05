@@ -1,8 +1,40 @@
 serviceAccount:
   create: true
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 10001
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+                - promtail
+        topologyKey: kubernetes.io/hostname
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
 config:
   clients:
     - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+      batchwait: 1s
+      timeout: 10s
   snippets:
     extraScrapeConfigs: |
       - job_name: kubernetes-pods-app
@@ -15,8 +47,20 @@ config:
             target_label: app
           - source_labels: ["__meta_kubernetes_namespace"]
             target_label: namespace
+      - job_name: kubernetes-pods-system
+        pipeline_stages:
+          - cri: {}
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: ["__meta_kubernetes_pod_label_k8s-app"]
+            target_label: k8s_app
+          - source_labels: ["__meta_kubernetes_namespace"]
+            target_label: namespace
 serviceMonitor:
   enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
 resources:
   requests:
     cpu: 100m

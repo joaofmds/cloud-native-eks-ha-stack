@@ -1,7 +1,39 @@
 mode: deployment
 replicaCount: 2
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
 serviceAccount:
   create: true
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 10001
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - otel-collector
+          topologyKey: kubernetes.io/hostname
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
 config:
   receivers:
     otlp:
@@ -17,6 +49,18 @@ config:
       timeout: 5s
       send_batch_max_size: 512
       send_batch_size: 256
+    k8sattributes:
+      auth_type: serviceAccount
+      passthrough: false
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+    resource:
+      attributes:
+        - action: insert
+          key: k8s.cluster.name
+          value: {{ requiredEnv "CLUSTER_NAME" }}
   exporters:
     otlp/tempo:
       endpoint: tempo-distributor.monitoring.svc.cluster.local:4317
@@ -27,18 +71,26 @@ config:
       labels:
         resource:
           service.name: service
+    logging:
+      loglevel: warn
+  extensions:
+    health_check: {}
+    pprof: {}
   service:
+    extensions: [pprof, health_check]
     pipelines:
       traces:
         receivers: [otlp]
-        processors: [memory_limiter, batch]
+        processors: [memory_limiter, k8sattributes, resource, batch]
         exporters: [otlp/tempo]
       logs:
         receivers: [otlp]
-        processors: [batch]
+        processors: [k8sattributes, resource, batch]
         exporters: [loki]
 serviceMonitor:
   enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
 resources:
   requests:
     cpu: 200m
