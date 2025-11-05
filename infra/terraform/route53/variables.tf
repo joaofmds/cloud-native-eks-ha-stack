@@ -36,6 +36,12 @@ variable "create_public_zone" {
   default     = true
 }
 
+variable "existing_public_zone_id" {
+  description = "Optional hosted zone ID of an existing public zone to manage"
+  type        = string
+  default     = null
+}
+
 variable "create_private_zone" {
   description = "Create a private hosted zone associated to one or more VPCs"
   type        = bool

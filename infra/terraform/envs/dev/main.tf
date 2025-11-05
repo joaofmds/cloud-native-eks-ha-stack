@@ -27,6 +27,22 @@ module "s3_loki" {
   kms_key_arn   = var.s3_loki_kms_key_arn
 }
 
+module "s3_tempo" {
+  source = "../../s3-tempo"
+
+  name_prefix = local.name_prefix
+  project     = var.project
+  environment = var.environment
+  owner       = var.owner
+  tags        = var.tags
+
+  bucket_name  = var.s3_tempo_bucket_name
+  versioning   = var.s3_tempo_enable_versioning
+  force_destroy = var.s3_tempo_force_destroy
+  kms_key_arn   = var.s3_tempo_kms_key_arn
+  retention_days = var.s3_tempo_retention_days
+}
+
 module "vpc" {
   source = "../../vpc"
 
@@ -94,6 +110,7 @@ module "route53" {
   tags        = var.tags
 
   create_public_zone  = var.route53_create_public_zone
+  existing_public_zone_id = var.route53_existing_public_zone_id
   create_private_zone = var.route53_create_private_zone
 
   private_zone_vpc_associations = local.private_zone_associations
@@ -153,7 +170,7 @@ module "iam" {
   tempo_s3 = var.iam_enable_tempo_s3 ? {
     namespace        = var.iam_tempo_namespace
     service_accounts = var.iam_tempo_service_accounts
-    bucket_arn       = module.s3_loki.bucket_arn
+    bucket_arn       = module.s3_tempo.bucket_arn
   } : null
 
   enable_otel_xray = var.iam_enable_otel_xray
@@ -161,4 +178,31 @@ module "iam" {
     namespace       = var.iam_otel_namespace
     service_account = var.iam_otel_service_account
   } : null
+
+  enable_ebs_csi_driver = var.iam_enable_ebs_csi_driver
+  ebs_csi_driver = {
+    namespace       = var.iam_ebs_csi_driver_namespace
+    service_account = var.iam_ebs_csi_driver_service_account
+  }
+}
+
+resource "aws_eks_addon" "ebs_csi_driver" {
+  count = var.eks_enable_ebs_csi_driver ? 1 : 0
+
+  cluster_name = module.eks.cluster_name
+  addon_name   = "aws-ebs-csi-driver"
+
+  addon_version                 = var.eks_ebs_csi_driver_version
+  resolve_conflicts_on_create   = "OVERWRITE"
+  resolve_conflicts_on_update   = "OVERWRITE"
+  service_account_role_arn      = module.iam.ebs_csi_driver_role_arn
+
+  depends_on = [module.iam]
+
+  lifecycle {
+    precondition {
+      condition     = module.iam.ebs_csi_driver_role_arn != null
+      error_message = "aws_eks_addon.ebs_csi_driver requires iam_enable_ebs_csi_driver to be true so that the service account role ARN is available."
+    }
+  }
 }

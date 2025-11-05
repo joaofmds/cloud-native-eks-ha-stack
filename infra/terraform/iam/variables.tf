@@ -155,3 +155,18 @@ variable "otel_xray" {
   })
   default = null
 }
+
+variable "enable_ebs_csi_driver" {
+  description = "Enable IRSA role for the AWS EBS CSI driver"
+  type        = bool
+  default     = false
+}
+
+variable "ebs_csi_driver" {
+  description = "Configuration for the AWS EBS CSI driver IRSA role"
+  type = object({
+    namespace       = optional(string, "kube-system")
+    service_account = optional(string, "ebs-csi-controller-sa")
+  })
+  default = null
+}

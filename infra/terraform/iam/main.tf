@@ -320,6 +320,9 @@ resource "aws_iam_role_policy_attachment" "loki_s3_attach" {
 
 locals {
   tempo_sa_fqdns = var.enable_tempo_s3 && var.tempo_s3 != null ? [for sa in coalesce(var.tempo_s3.service_accounts, ["tempo"]) : "system:serviceaccount:${coalesce(var.tempo_s3.namespace, "observability")}:${sa}"] : []
+  ebs_csi_sa_fqdns = var.enable_ebs_csi_driver && var.ebs_csi_driver != null ? [
+    "system:serviceaccount:${coalesce(var.ebs_csi_driver.namespace, "kube-system")}:${coalesce(var.ebs_csi_driver.service_account, "ebs-csi-controller-sa")}"
+  ] : []
 }
 
 resource "aws_iam_role" "tempo_s3" {
@@ -370,6 +373,34 @@ resource "aws_iam_role_policy_attachment" "tempo_s3_attach" {
 }
 
 # ── Preset: Otel Collector -> AWS X-Ray (PutTraceSegments) ────────────────────
+resource "aws_iam_role" "ebs_csi_driver" {
+  count = var.enable_ebs_csi_driver ? 1 : 0
+  name  = "irsa-ebs-csi-driver"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect    = "Allow",
+      Action    = "sts:AssumeRoleWithWebIdentity",
+      Principal = { Federated = var.oidc_provider_arn },
+      Condition = {
+        StringEquals = {
+          "${local.oidc_hostpath}:aud" = "sts.amazonaws.com"
+        },
+        StringLike = {
+          "${local.oidc_hostpath}:sub" = local.ebs_csi_sa_fqdns
+        }
+      }
+    }]
+  })
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
+  count      = var.enable_ebs_csi_driver ? 1 : 0
+  role       = aws_iam_role.ebs_csi_driver[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
 resource "aws_iam_role" "otel_xray" {
   count = var.enable_otel_xray ? 1 : 0
   name  = "irsa-otel-xray"

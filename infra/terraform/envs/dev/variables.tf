@@ -250,6 +250,12 @@ variable "route53_create_public_zone" {
   default     = false
 }
 
+variable "route53_existing_public_zone_id" {
+  description = "Hosted zone ID of an existing public zone to manage"
+  type        = string
+  default     = null
+}
+
 variable "route53_create_private_zone" {
   description = "Create a private hosted zone"
   type        = bool
@@ -301,6 +307,36 @@ variable "s3_loki_kms_key_arn" {
   default     = null
 }
 
+variable "s3_tempo_bucket_name" {
+  description = "Optional override for the Tempo S3 bucket name"
+  type        = string
+  default     = null
+}
+
+variable "s3_tempo_enable_versioning" {
+  description = "Enable versioning on the Tempo bucket"
+  type        = bool
+  default     = true
+}
+
+variable "s3_tempo_force_destroy" {
+  description = "Allow force destroy of the Tempo bucket"
+  type        = bool
+  default     = false
+}
+
+variable "s3_tempo_kms_key_arn" {
+  description = "KMS key ARN for Tempo bucket encryption"
+  type        = string
+  default     = null
+}
+
+variable "s3_tempo_retention_days" {
+  description = "Lifecycle retention (in days) for Tempo traces"
+  type        = number
+  default     = 7
+}
+
 variable "iam_generic_irsa_roles" {
   description = "Additional generic IRSA roles"
   type        = map(any)
@@ -310,13 +346,13 @@ variable "iam_generic_irsa_roles" {
 variable "iam_enable_external_dns" {
   description = "Create an ExternalDNS IRSA role"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "iam_external_dns_namespace" {
   description = "Namespace for the ExternalDNS service account"
   type        = string
-  default     = "kube-system"
+  default     = "external-dns"
 }
 
 variable "iam_external_dns_service_account" {
@@ -334,7 +370,7 @@ variable "iam_external_dns_zone_ids" {
 variable "iam_enable_cert_manager" {
   description = "Create a cert-manager IRSA role"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "iam_cert_manager_namespace" {
@@ -400,7 +436,7 @@ variable "iam_enable_loki_s3" {
 variable "iam_loki_namespace" {
   description = "Namespace containing Loki pods"
   type        = string
-  default     = "observability"
+  default     = "monitoring"
 }
 
 variable "iam_loki_service_accounts" {
@@ -412,13 +448,13 @@ variable "iam_loki_service_accounts" {
 variable "iam_enable_tempo_s3" {
   description = "Create an IRSA role for Tempo"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "iam_tempo_namespace" {
   description = "Namespace containing Tempo pods"
   type        = string
-  default     = "observability"
+  default     = "monitoring"
 }
 
 variable "iam_tempo_service_accounts" {
@@ -436,11 +472,41 @@ variable "iam_enable_otel_xray" {
 variable "iam_otel_namespace" {
   description = "Namespace for the OpenTelemetry collector"
   type        = string
-  default     = "observability"
+  default     = "monitoring"
 }
 
 variable "iam_otel_service_account" {
   description = "Service account name for the OpenTelemetry collector"
   type        = string
   default     = "otel-collector"
+}
+
+variable "iam_enable_ebs_csi_driver" {
+  description = "Create an IRSA role for the AWS EBS CSI driver"
+  type        = bool
+  default     = true
+}
+
+variable "iam_ebs_csi_driver_namespace" {
+  description = "Namespace for the EBS CSI driver controller"
+  type        = string
+  default     = "kube-system"
+}
+
+variable "iam_ebs_csi_driver_service_account" {
+  description = "Service account for the EBS CSI driver controller"
+  type        = string
+  default     = "ebs-csi-controller-sa"
+}
+
+variable "eks_enable_ebs_csi_driver" {
+  description = "Install the AWS EBS CSI managed addon"
+  type        = bool
+  default     = true
+}
+
+variable "eks_ebs_csi_driver_version" {
+  description = "Optional version override for the AWS EBS CSI addon"
+  type        = string
+  default     = null
 }

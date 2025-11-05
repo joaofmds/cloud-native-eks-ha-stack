@@ -58,6 +58,12 @@ releases:
     values:
       - values/external-dns.yaml
 
+  - name: storageclass-gp3
+    namespace: kube-system
+    chart: ./charts/storageclass-gp3
+    needs:
+      - external-dns/external-dns
+
   - name: kube-prometheus-stack
     namespace: monitoring
     chart: prometheus-community/kube-prometheus-stack
