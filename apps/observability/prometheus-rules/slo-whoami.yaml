@@ -3,7 +3,6 @@ kind: PrometheusRule
 metadata:
   name: whoami-slo-rules
   namespace: monitoring
-  namespace: monitoring
   labels:
     app.kubernetes.io/name: whoami-slo-rules
     app.kubernetes.io/component: monitoring
