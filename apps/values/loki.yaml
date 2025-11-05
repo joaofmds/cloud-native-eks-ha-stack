@@ -1,0 +1,47 @@
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 2
+  storage_config:
+    aws:
+      s3: s3://{{ requiredEnv "LOKI_S3_BUCKET" }}
+      region: {{ requiredEnv "AWS_REGION" }}
+      s3forcepathstyle: true
+    boltdb_shipper:
+      shared_store: aws
+      active_index_directory: /var/loki/index
+      cache_location: /var/loki/index_cache
+  schema_config:
+    configs:
+      - from: 2023-01-01
+        store: boltdb-shipper
+        object_store: aws
+        schema: v11
+        index:
+          prefix: loki_index_
+          period: 24h
+  ruler:
+    storage:
+      type: s3
+      s3:
+        bucketnames: {{ requiredEnv "LOKI_S3_BUCKET" }}
+        region: {{ requiredEnv "AWS_REGION" }}
+        s3forcepathstyle: true
+  compactor:
+    shared_store: s3
+read:
+  replicaCount: 2
+write:
+  replicaCount: 2
+backend:
+  replicaCount: 1
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClassName: gp3
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: {{ requiredEnv "LOKI_IAM_ROLE_ARN" }}
+serviceMonitor:
+  enabled: true

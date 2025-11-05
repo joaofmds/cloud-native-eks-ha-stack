@@ -1,0 +1,31 @@
+provider: aws
+domainFilters:
+  - {{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
+sources:
+  - service
+  - ingress
+policy: sync
+registry: txt
+interval: 1m
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: {{ requiredEnv "EXTERNAL_DNS_IAM_ROLE_ARN" }}
+  name: external-dns
+podSecurityContext:
+  fsGroup: 65534
+securityContext:
+  fsGroup: 65534
+  runAsNonRoot: true
+  runAsUser: 65534
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

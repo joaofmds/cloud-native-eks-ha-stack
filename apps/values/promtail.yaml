@@ -1,0 +1,26 @@
+serviceAccount:
+  create: true
+config:
+  clients:
+    - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+  snippets:
+    extraScrapeConfigs: |
+      - job_name: kubernetes-pods-app
+        pipeline_stages:
+          - cri: {}
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: ["__meta_kubernetes_pod_label_app"]
+            target_label: app
+          - source_labels: ["__meta_kubernetes_namespace"]
+            target_label: namespace
+serviceMonitor:
+  enabled: true
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

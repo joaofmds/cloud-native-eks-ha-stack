@@ -1,0 +1,68 @@
+defaultRules:
+  create: true
+prometheus:
+  serviceMonitorSelectorNilUsesHelmValues: false
+  podMonitorSelectorNilUsesHelmValues: false
+  prometheusSpec:
+    retention: 15d
+    scrapeInterval: 30s
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+alertmanager:
+  alertmanagerSpec:
+    replicas: 2
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+grafana:
+  adminUser: admin
+  adminPassword: {{ requiredEnv "GRAFANA_ADMIN_PASSWORD" }}
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: {{ requiredEnv "GRAFANA_IAM_ROLE_ARN" }}
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/tls-acme: "true"
+    hosts:
+      - grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 5Gi
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+    - name: Tempo
+      type: tempo
+      url: http://tempo.monitoring.svc.cluster.local:3100
+grafana.ini:
+  server:
+    root_url: https://grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
+  auth.anonymous:
+    enabled: false
