@@ -1,0 +1,100 @@
+repositories:
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: opentelemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
+  - name: cowboysysop
+    url: https://cowboysysop.github.io/charts
+
+releases:
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    chart: ingress-nginx/ingress-nginx
+    version: 4.7.1
+    createNamespace: true
+    values:
+      - values/ingress-nginx.yaml
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: v1.12.3
+    createNamespace: true
+    needs:
+      - ingress-nginx/ingress-nginx
+    values:
+      - values/cert-manager.yaml
+
+  - name: external-dns
+    namespace: external-dns
+    chart: bitnami/external-dns
+    version: 6.19.2
+    createNamespace: true
+    needs:
+      - cert-manager/cert-manager
+    values:
+      - values/external-dns.yaml
+
+  - name: kube-prometheus-stack
+    namespace: monitoring
+    chart: prometheus-community/kube-prometheus-stack
+    version: 48.3.1
+    createNamespace: true
+    needs:
+      - external-dns/external-dns
+    values:
+      - values/kube-prometheus-stack.yaml
+
+  - name: loki
+    namespace: monitoring
+    chart: grafana/loki
+    version: 5.36.3
+    needs:
+      - monitoring/kube-prometheus-stack
+    values:
+      - values/loki.yaml
+
+  - name: promtail
+    namespace: monitoring
+    chart: grafana/promtail
+    version: 6.11.3
+    needs:
+      - monitoring/loki
+    values:
+      - values/promtail.yaml
+
+  - name: tempo
+    namespace: monitoring
+    chart: grafana/tempo
+    version: 1.7.1
+    needs:
+      - monitoring/promtail
+    values:
+      - values/tempo.yaml
+
+  - name: otel-collector
+    namespace: monitoring
+    chart: opentelemetry/opentelemetry-collector
+    version: 0.45.3
+    needs:
+      - monitoring/tempo
+    values:
+      - values/otel-collector.yaml
+
+  - name: whoami
+    namespace: demo
+    chart: cowboysysop/whoami
+    version: 5.0.0
+    createNamespace: true
+    needs:
+      - monitoring/otel-collector
+    values:
+      - values/whoami.yaml

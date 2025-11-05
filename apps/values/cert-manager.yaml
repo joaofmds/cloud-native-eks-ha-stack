@@ -1,0 +1,21 @@
+installCRDs: true
+replicaCount: 2
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: {{ requiredEnv "CERT_MANAGER_IAM_ROLE_ARN" }}
+podDnsPolicy: ClusterFirst
+podDnsConfig:
+  nameservers:
+    - 1.1.1.1
+    - 8.8.8.8
+extraArgs:
+  - --cluster-resource-namespace=cert-manager
+  - --enable-certificate-owner-ref=true
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: true
+webhook:
+  timeoutSeconds: 10
+cainjector:
+  replicaCount: 2

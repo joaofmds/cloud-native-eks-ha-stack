@@ -1,0 +1,36 @@
+tempo:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: {{ requiredEnv "TEMPO_IAM_ROLE_ARN" }}
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: {{ requiredEnv "TEMPO_S3_BUCKET" }}
+        region: {{ requiredEnv "AWS_REGION" }}
+        insecure: false
+        s3forcepathstyle: true
+  metricsGenerator:
+    enabled: true
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  traces:
+    jaeger:
+      enabled: true
+      grpc:
+        enabled: true
+    otlp:
+      http:
+        enabled: true
+      grpc:
+        enabled: true
+    zipkin:
+      enabled: true
+  serviceMonitor:
+    enabled: true
