@@ -428,3 +428,48 @@ resource "aws_iam_role_policy_attachment" "otel_xray_awsmanaged" {
   role       = aws_iam_role.otel_xray[0].name
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
+
+# Após o bloco otel_xray, adicionar:
+
+resource "aws_iam_role" "grafana" {
+  count = var.enable_grafana_s3 ? 1 : 0
+  name  = "irsa-grafana"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect    = "Allow",
+      Action    = "sts:AssumeRoleWithWebIdentity",
+      Principal = { Federated = var.oidc_provider_arn },
+      Condition = {
+        StringEquals = {
+          "${local.oidc_hostpath}:aud" = "sts.amazonaws.com"
+        },
+        StringLike = {
+          "${local.oidc_hostpath}:sub" = ["system:serviceaccount:${coalesce(try(var.grafana.namespace, null), "monitoring")}:${coalesce(try(var.grafana.service_account, null), "kube-prometheus-stack-grafana")}"]
+        }
+      }
+    }]
+  })
+  tags = local.common_tags
+}
+
+# Policy para Grafana ler de S3 (se necessário para imagens/exports)
+data "aws_iam_policy_document" "grafana" {
+  count = var.enable_grafana_s3 ? 1 : 0
+  statement {
+    actions   = ["s3:ListBucket", "s3:GetObject", "s3:PutObject"]
+    resources = [var.grafana_s3.bucket_arn, "${var.grafana_s3.bucket_arn}/*"]
+  }
+}
+
+resource "aws_iam_policy" "grafana" {
+  count  = var.enable_grafana_s3 ? 1 : 0
+  name   = "grafana-s3"
+  policy = data.aws_iam_policy_document.grafana[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "grafana" {
+  count      = var.enable_grafana_s3 ? 1 : 0
+  role       = aws_iam_role.grafana[0].name
+  policy_arn = aws_iam_policy.grafana[0].arn
+}

@@ -170,3 +170,26 @@ variable "ebs_csi_driver" {
   })
   default = null
 }
+
+variable "enable_grafana_s3" {
+  description = "Enable IRSA role for Grafana"
+  type        = bool
+  default     = false
+}
+
+variable "grafana" {
+  description = "Configuration for Grafana IRSA role"
+  type = object({
+    namespace       = optional(string, "monitoring")
+    service_account = optional(string, "kube-prometheus-stack-grafana")
+  })
+  default = null
+}
+
+variable "grafana_s3" {
+  description = "S3 bucket for Grafana (optional)"
+  type = object({
+    bucket_arn = string
+  })
+  default = null
+}
