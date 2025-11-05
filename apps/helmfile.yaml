@@ -73,6 +73,12 @@ releases:
       - external-dns/external-dns
     values:
       - values/kube-prometheus-stack.yaml
+      - observability/alertmanager/values.yaml
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: kubectl
+        args: ["apply", "-f", "observability/grafana/dashboards/whoami-sli-cm.yaml"]
 
   - name: loki
     namespace: monitoring

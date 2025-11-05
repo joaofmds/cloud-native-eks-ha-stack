@@ -105,6 +105,11 @@ alertmanager:
         cpu: 1
         memory: 512Mi
 grafana:
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
   adminUser: admin
   adminPassword: {{ requiredEnv "GRAFANA_ADMIN_PASSWORD" }}
   serviceAccount:

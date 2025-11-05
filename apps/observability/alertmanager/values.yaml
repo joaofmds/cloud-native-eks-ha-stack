@@ -1,14 +1,10 @@
-# Alertmanager configuration values
 alertmanager:
-  # Alertmanager configuration
   config:
     global:
-      # Global configuration
       smtp_smarthost: 'localhost:587'
       smtp_from: 'alertmanager@example.com'
       resolve_timeout: 5m
     
-    # Routing tree configuration
     route:
       group_by: ['alertname', 'cluster', 'service']
       group_wait: 10s
@@ -32,10 +28,8 @@ alertmanager:
         group_wait: 2m
         repeat_interval: 10m
     
-    # Notification receivers
     receivers:
     - name: 'default'
-      # Default receiver (no notifications)
     
     - name: 'slack-critical'
       slack_configs:
@@ -92,7 +86,6 @@ alertmanager:
         send_resolved: true
         title_link: '{{ template "slack.default.titlelink" . }}'
     
-    # Inhibition rules
     inhibit_rules:
     - source_matchers:
       - severity="critical"
@@ -100,11 +93,9 @@ alertmanager:
       - severity="warning"
       equal: ['alertname', 'cluster', 'service']
     
-    # Templates for notifications
     templates:
     - '/etc/alertmanager/templates/*.tmpl'
 
-  # Alertmanager storage configuration
   storage:
     volumeClaimTemplate:
       spec:
@@ -114,7 +105,6 @@ alertmanager:
           requests:
             storage: 2Gi
 
-  # Resource configuration
   resources:
     limits:
       cpu: 200m
@@ -123,15 +113,12 @@ alertmanager:
       cpu: 100m
       memory: 128Mi
 
-  # High availability configuration
   replicaCount: 2
 
-  # Pod disruption budget
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
 
-  # Service monitor for Prometheus
   serviceMonitor:
     enabled: true
     interval: 30s

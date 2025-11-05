@@ -1,25 +1,16 @@
-# ClusterIssuer configuration
 name: "letsencrypt-dns01"
 
-# ACME configuration
-email: ""  # Required: Email address for ACME registration
-server: "https://acme-v02.api.letsencrypt.org/directory"  # Use staging: https://acme-staging-v02.api.letsencrypt.org/directory
+email: ""  
+server: "https://acme-v02.api.letsencrypt.org/directory"  
 
-# Private key secret name for ACME account
 privateKeySecretName: "acme-account-key"
 
-# AWS Route53 configuration
-region: "us-east-1"  # Required: AWS region
-hostedZoneID: ""     # Required: Route53 hosted zone ID
+region: "us-east-1"
+hostedZoneID: ""
 
-# Optional: IAM role ARN for Route53 access (leave empty to use IRSA)
 roleARN: ""
 
-# Optional: restrict to specific DNS zones (empty list matches all zones)
 zones: []
-  # - example.com
-  # - "*.example.com"
 
-# Chart metadata overrides
 nameOverride: ""
 fullnameOverride: ""
