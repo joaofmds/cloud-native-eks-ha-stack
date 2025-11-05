@@ -18,9 +18,15 @@ variable "owner" {
   description = "Owner tag (email or team)"
 }
 
-variable "tags" { 
+variable "tags" {
   type = map(string)
   default = {}
+}
+
+variable "eks_cluster_tags" {
+  description = "Map of EKS cluster name => tag value ('owned' or 'shared') applied to public/private subnets"
+  type        = map(string)
+  default     = {}
 }
 
 

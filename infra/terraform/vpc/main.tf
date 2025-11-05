@@ -35,6 +35,22 @@ locals {
     cidrsubnet(var.cidr_block, var.subnet_newbits, i)
   ] : []
 
+  eks_cluster_tags = { for cluster_name, value in var.eks_cluster_tags : "kubernetes.io/cluster/${cluster_name}" => value }
+
+  public_subnet_extra_tags = length(local.eks_cluster_tags) > 0 ? merge(
+    {
+      "kubernetes.io/role/elb" = "1"
+    },
+    local.eks_cluster_tags,
+  ) : {}
+
+  private_subnet_extra_tags = length(local.eks_cluster_tags) > 0 ? merge(
+    {
+      "kubernetes.io/role/internal-elb" = "1"
+    },
+    local.eks_cluster_tags,
+  ) : {}
+
   common_tags = merge({
     "ManagedBy"   = "Terraform",
     "Project"     = var.project,
@@ -78,7 +94,7 @@ resource "aws_subnet" "public" {
   availability_zone       = each.value.az
   map_public_ip_on_launch = true
 
-  tags = merge(local.common_tags, {
+  tags = merge(local.common_tags, local.public_subnet_extra_tags, {
     Name = "${local.name_prefix}-public-${each.value.az}",
     Tier = "public"
   })
@@ -131,7 +147,7 @@ resource "aws_subnet" "private" {
   cidr_block        = each.value.cidr
   availability_zone = each.value.az
 
-  tags = merge(local.common_tags, {
+  tags = merge(local.common_tags, local.private_subnet_extra_tags, {
     Name = "${local.name_prefix}-private-${each.value.az}",
     Tier = "private"
   })

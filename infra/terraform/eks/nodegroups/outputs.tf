@@ -13,6 +13,11 @@ output "nodegroup_status" {
   value       = { for k, ng in aws_eks_node_group.this : k => ng.status }
 }
 
+output "nodegroup_statuses" {
+  description = "Alias of nodegroup_status for backwards compatibility"
+  value       = { for k, ng in aws_eks_node_group.this : k => ng.status }
+}
+
 output "node_roles" {
   description = "Map of node group keys to their IAM role ARNs"
   value       = { for k, r in aws_iam_role.node : k => r.arn }
@@ -46,4 +51,40 @@ output "nodegroup_instance_types" {
 output "nodegroup_ami_types" {
   description = "Map of node group keys to their AMI types"
   value       = { for k, ng in aws_eks_node_group.this : k => ng.ami_type }
+}
+
+output "nodegroup_scaling_configs" {
+  description = "Map of node group keys to their scaling configuration"
+  value = { for k, ng in aws_eks_node_group.this :
+    k => {
+      min_size     = ng.scaling_config[0].min_size
+      max_size     = ng.scaling_config[0].max_size
+      desired_size = try(ng.scaling_config[0].desired_size, null)
+    }
+  }
+}
+
+output "total_min_nodes" {
+  description = "Total minimum number of nodes across all node groups"
+  value       = sum([for ng in aws_eks_node_group.this : ng.scaling_config[0].min_size])
+}
+
+output "total_max_nodes" {
+  description = "Total maximum number of nodes across all node groups"
+  value       = sum([for ng in aws_eks_node_group.this : ng.scaling_config[0].max_size])
+}
+
+output "total_desired_nodes" {
+  description = "Total desired number of nodes across all node groups"
+  value       = sum([for ng in aws_eks_node_group.this : try(ng.scaling_config[0].desired_size, ng.scaling_config[0].min_size)])
+}
+
+output "launch_template_ids" {
+  description = "Map of node group keys to their launch template IDs (managed or provided)"
+  value = { for k, lt in local.effective_launch_templates : k => try(lt.id, null) }
+}
+
+output "launch_template_versions" {
+  description = "Map of node group keys to their launch template versions (managed or provided)"
+  value = { for k, lt in local.effective_launch_templates : k => try(lt.version, null) }
 }

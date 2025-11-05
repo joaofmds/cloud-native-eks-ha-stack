@@ -48,6 +48,17 @@ variable "nodegroup_subnet_ids" {
   type        = list(string)
 }
 
+variable "public_subnet_cidr_blocks" {
+  description = "CIDR blocks for public subnets that will host load balancers"
+  type        = list(string)
+  default     = []
+}
+
+variable "vpc_cidr_block" {
+  description = "Primary CIDR block associated with the VPC"
+  type        = string
+}
+
 # ── Cluster Access Configuration ───────────────────────────────────────
 
 variable "endpoint_public_access" {

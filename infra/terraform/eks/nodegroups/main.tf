@@ -84,6 +84,35 @@ locals {
   }
 }
 
+resource "aws_launch_template" "managed" {
+  for_each = var.default_security_group_id != null ? { for k, ng in local.resolved : k => ng if try(ng.launch_template, null) == null } : {}
+
+  name_prefix   = "${var.cluster_name}-${each.key}-"
+  update_default_version = true
+
+  vpc_security_group_ids = [var.default_security_group_id]
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = merge(local.common_tags, {
+      Name = "${var.cluster_name}-${each.value._name}"
+    })
+  }
+}
+
+locals {
+  effective_launch_templates = {
+    for k, ng in local.resolved :
+    k => (
+      try(ng.launch_template, null) != null ? ng.launch_template :
+      (var.default_security_group_id != null && contains(keys(aws_launch_template.managed), k) ? {
+        id      = aws_launch_template.managed[k].id
+        version = aws_launch_template.managed[k].latest_version
+      } : null)
+    )
+  }
+}
+
 resource "aws_eks_node_group" "this" {
   for_each        = local.resolved
   cluster_name    = var.cluster_name
@@ -131,10 +160,10 @@ resource "aws_eks_node_group" "this" {
   }
 
   dynamic "launch_template" {
-    for_each = try(each.value.launch_template, null) != null ? [1] : []
+    for_each = local.effective_launch_templates[each.key] != null ? [local.effective_launch_templates[each.key]] : []
     content {
-      id      = each.value.launch_template.id
-      version = each.value.launch_template.version
+      id      = launch_template.value.id
+      version = launch_template.value.version
     }
   }
 
