@@ -1,0 +1,91 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: whoami-slo-rules
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: whoami-slo-rules
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: observability
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  # ————————————————————————————————————————————
+  # SLI: Availability / Success Rate
+  # ————————————————————————————————————————————
+  - name: whoami.sli.recording
+    interval: 30s
+    rules:
+    - record: sli:whoami:success_ratio:5m
+      expr: |
+        sum(increase(nginx_ingress_controller_requests{ingress="whoami",status!~"5.."}[5m]))
+        /
+        sum(increase(nginx_ingress_controller_requests{ingress="whoami"}[5m]))
+
+    - record: sli:whoami:success_ratio:30m
+      expr: |
+        sum(increase(nginx_ingress_controller_requests{ingress="whoami",status!~"5.."}[30m]))
+        /
+        sum(increase(nginx_ingress_controller_requests{ingress="whoami"}[30m]))
+
+    # ————————————————————————————————————————————
+    # SLI: Latency (P95 / P99)
+    # ————————————————————————————————————————————
+    - record: sli:whoami:latency_p95:5m
+      expr: |
+        histogram_quantile(
+          0.95,
+          sum by (le) (rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress="whoami"}[5m]))
+        )
+
+    - record: sli:whoami:latency_p99:5m
+      expr: |
+        histogram_quantile(
+          0.99,
+          sum by (le) (rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress="whoami"}[5m]))
+        )
+
+  # ————————————————————————————————————————————
+  # SLO Alerts
+  # ————————————————————————————————————————————
+  - name: whoami.slo.alerts
+    interval: 30s
+    rules:
+    # Target SLO: 99.9% availability over 30d
+    # Error budget (EB) = 0.1% errors
+    # Multi‑window burn‑rate based on Google's SRE workbook
+    - alert: SLOErrorBudgetBurn
+      expr: |
+        # fast burn (5m / 1h)
+        (
+          (1 - sli:whoami:success_ratio:5m) / 0.001 > 14
+        )
+        and
+        (
+          (1 - sli:whoami:success_ratio:30m) / 0.001 > 7
+        )
+      for: 2m
+      labels:
+        severity: critical
+        service: whoami
+        slo: availability-99.9
+        team: platform
+      annotations:
+        summary: "SLO burn rate too high (whoami)"
+        description: |
+          WhoAmI is burning error budget faster than acceptable.
+          Check NGINX 5xx, pods readiness, HPA and upstreams.
+        runbook_url: "https://runbooks.example.com/slo-burn-rate"
+
+    - alert: HighLatencyP99
+      expr: sli:whoami:latency_p99:5m > 0.5
+      for: 5m
+      labels:
+        severity: warning
+        service: whoami
+        team: platform
+      annotations:
+        summary: "High P99 latency (>500ms)"
+        description: "Investigate NGINX, app CPU/memory throttling, and upstream DNS."
+        runbook_url: "https://runbooks.example.com/high-latency"

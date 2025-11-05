@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cluster-issuer
+version: 0.1.0
+description: Minimal chart to create a cert-manager ClusterIssuer (Let\'s Encrypt Route53 DNS-01)
