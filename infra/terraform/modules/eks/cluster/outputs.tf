@@ -55,5 +55,5 @@ output "oidc_issuer_url" {
 
 output "region" {
   description = "AWS region where the EKS cluster is deployed"
-  value       = data.aws_region.this.name
+  value       = data.aws_region.this.id
 }

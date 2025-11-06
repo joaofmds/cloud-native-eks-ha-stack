@@ -33,8 +33,8 @@ resource "aws_kms_key" "this" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = compact(concat(
-      [
+    Statement = [
+      for statement in [
         {
           Sid       = "AllowRootAccountAdmin",
           Effect    = "Allow",
@@ -62,7 +62,7 @@ resource "aws_kms_key" "this" {
         length(each.value.cloudwatch_logs_arns) > 0 ? {
           Sid       = "AllowCloudWatchLogsService",
           Effect    = "Allow",
-          Principal = { Service = "logs.${data.aws_region.this.name}.amazonaws.com" },
+          Principal = { Service = "logs.${data.aws_region.this.id}.amazonaws.com" },
           Action    = local.base_use_actions,
           Resource  = "*",
           Condition = {
@@ -92,8 +92,8 @@ resource "aws_kms_key" "this" {
           Action    = local.base_use_actions,
           Resource  = "*"
         } : null
-      ]
-    ))
+      ] : statement if statement != null
+    ]
   })
 }
 

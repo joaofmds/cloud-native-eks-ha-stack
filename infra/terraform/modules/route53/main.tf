@@ -50,7 +50,7 @@ resource "aws_route53_vpc_association_authorization" "private" {
   } : {}
   zone_id    = aws_route53_zone.private[0].zone_id
   vpc_id     = each.value.vpc_id
-  vpc_region = try(each.value.vpc_region, data.aws_region.this.name)
+  vpc_region = try(each.value.vpc_region, data.aws_region.this.id)
   lifecycle { create_before_destroy = true }
 }
 
@@ -60,7 +60,7 @@ resource "aws_route53_zone_association" "private" {
   } : {}
   zone_id    = aws_route53_zone.private[0].zone_id
   vpc_id     = each.value.vpc_id
-  vpc_region = try(each.value.vpc_region, data.aws_region.this.name)
+  vpc_region = try(each.value.vpc_region, data.aws_region.this.id)
   depends_on = [aws_route53_vpc_association_authorization.private]
 }
 
@@ -96,7 +96,7 @@ resource "aws_kms_key" "dnssec" {
         Condition = {
           StringEquals = {
             "kms:CallerAccount" : data.aws_caller_identity.this.account_id,
-            "kms:ViaService" : "dnssec-route53.${data.aws_region.this.name}.amazonaws.com"
+            "kms:ViaService" : "dnssec-route53.${data.aws_region.this.id}.amazonaws.com"
           }
         }
       }

@@ -44,20 +44,22 @@ resource "aws_ecr_lifecycle_policy" "this" {
   policy = coalesce(
     try(each.value.lifecycle_policy_json, null),
     jsonencode({
-      rules = compact([
-        try(each.value.lifecycle_keep_last, null) != null ? {
+      rules = [
+        for rule in [
+          try(each.value.lifecycle_keep_last, null) != null ? {
           rulePriority = 1,
           description  = "keep last N images",
           selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = each.value.lifecycle_keep_last },
           action       = { type = "expire" }
         } : null,
-        try(each.value.lifecycle_expire_untagged_days, null) != null ? {
+          try(each.value.lifecycle_expire_untagged_days, null) != null ? {
           rulePriority = 2,
           description  = "expire untagged older than N days",
           selection    = { tagStatus = "untagged", countType = "sinceImagePushed", countUnit = "days", countNumber = each.value.lifecycle_expire_untagged_days },
           action       = { type = "expire" }
         } : null
-      ])
+        ] : rule if rule != null
+      ]
     })
   )
 }
@@ -78,7 +80,7 @@ resource "aws_ecr_repository_policy" "this" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = compact(concat(
+    Statement = concat(
       length(each.value.allow_push_arns) > 0 ? [{
         Sid       = "AllowPush",
         Effect    = "Allow",
@@ -103,7 +105,7 @@ resource "aws_ecr_repository_policy" "this" {
           "ecr:GetDownloadUrlForLayer"
         ]
       }] : []
-    ))
+    )
   })
 }
 

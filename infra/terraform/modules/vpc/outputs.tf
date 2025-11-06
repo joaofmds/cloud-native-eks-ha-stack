@@ -8,6 +8,11 @@ output "vpc_cidr" {
   description = "CIDR block assigned to the VPC"
 }
 
+output "vpc_cidr_block" {
+  value       = var.cidr_block
+  description = "Alias for the VPC CIDR block to maintain backwards compatibility"
+}
+
 output "availability_zones" {
   value       = local.azs
   description = "Availability zones used to place the subnets"

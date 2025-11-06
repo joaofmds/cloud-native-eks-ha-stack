@@ -1,4 +1,4 @@
-resource "aws_eks_cluster_addon" "vpc_cni" {
+resource "aws_eks_addon" "vpc_cni" {
   count     = var.enable_core_addons ? 1 : 0
   cluster_name  = aws_eks_cluster.this.name
   addon_name    = "vpc-cni"
@@ -8,7 +8,7 @@ resource "aws_eks_cluster_addon" "vpc_cni" {
   tags = local.common_tags
 }
 
-resource "aws_eks_cluster_addon" "coredns" {
+resource "aws_eks_addon" "coredns" {
   count     = var.enable_core_addons ? 1 : 0
   cluster_name  = aws_eks_cluster.this.name
   addon_name    = "coredns"
@@ -19,7 +19,7 @@ resource "aws_eks_cluster_addon" "coredns" {
   tags = local.common_tags
 }
 
-resource "aws_eks_cluster_addon" "kube_proxy" {
+resource "aws_eks_addon" "kube_proxy" {
   count     = var.enable_core_addons ? 1 : 0
   cluster_name  = aws_eks_cluster.this.name
   addon_name    = "kube-proxy"
