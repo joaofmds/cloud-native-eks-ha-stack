@@ -235,7 +235,7 @@ resource "aws_route_table_association" "database" {
 resource "aws_vpc_endpoint" "s3" {
   count             = var.enable_s3_gateway_endpoint ? 1 : 0
   vpc_id            = aws_vpc.this.id
-  service_name      = "com.amazonaws.${data.aws_region.this.name}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.this.id}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = concat(
     [aws_route_table.public.id],
@@ -249,7 +249,7 @@ resource "aws_vpc_endpoint" "s3" {
 resource "aws_vpc_endpoint" "dynamodb" {
   count             = var.enable_dynamodb_gateway_endpoint ? 1 : 0
   vpc_id            = aws_vpc.this.id
-  service_name      = "com.amazonaws.${data.aws_region.this.name}.dynamodb"
+  service_name      = "com.amazonaws.${data.aws_region.this.id}.dynamodb"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = concat(
     [aws_route_table.public.id],
@@ -278,7 +278,7 @@ resource "aws_security_group" "vpce" {
 resource "aws_vpc_endpoint" "interface" {
   for_each          = toset(var.interface_endpoints)
   vpc_id            = aws_vpc.this.id
-  service_name      = "com.amazonaws.${data.aws_region.this.name}.${each.value}"
+  service_name      = "com.amazonaws.${data.aws_region.this.id}.${each.value}"
   vpc_endpoint_type = "Interface"
   private_dns_enabled = true
   subnet_ids        = values(aws_subnet.private)[*].id

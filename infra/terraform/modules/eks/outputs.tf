@@ -153,14 +153,14 @@ output "kubectl_config" {
     cluster_name     = module.cluster.cluster_name
     cluster_endpoint = module.cluster.cluster_endpoint
     cluster_ca_data  = module.cluster.cluster_certificate_authority_data
-    region           = data.aws_region.current.name
+    region           = data.aws_region.current.id
   } : null
   sensitive = true
 }
 
 output "cluster_auth_command" {
   description = "AWS CLI command to configure kubectl authentication"
-  value       = var.enable_nodegroups ? "aws eks update-kubeconfig --region ${data.aws_region.current.name} --name ${module.cluster.cluster_name}" : null
+  value       = var.enable_nodegroups ? "aws eks update-kubeconfig --region ${data.aws_region.current.id} --name ${module.cluster.cluster_name}" : null
 }
 
 # ── Tags Output ───────────────────────────────────────────────────────
@@ -185,5 +185,5 @@ output "aws_account_id" {
 
 output "aws_region" {
   description = "AWS Region where the EKS cluster is deployed"
-  value       = data.aws_region.current.name
+  value       = data.aws_region.current.id
 }

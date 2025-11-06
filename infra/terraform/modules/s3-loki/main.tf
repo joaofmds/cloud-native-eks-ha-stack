@@ -19,7 +19,7 @@ locals {
 
   bucket_name = coalesce(
     var.bucket_name,
-    lower(replace("${var.name_prefix}-${data.aws_region.this.name}-${data.aws_caller_identity.this.account_id}", "_", "-"))
+    lower(replace("${var.name_prefix}-${data.aws_region.this.id}-${data.aws_caller_identity.this.account_id}", "_", "-"))
   )
 }
 
@@ -108,39 +108,41 @@ locals {
   readers = toset(var.allowed_reader_role_arns)
 
   statements_base = [
-    var.deny_insecure_transport ? {
-      Sid      = "DenyInsecureTransport",
-      Effect   = "Deny",
-      Principal= "*",
-      Action   = "s3:*",
-      Resource = [aws_s3_bucket.this.arn, "${aws_s3_bucket.this.arn}/*"],
-      Condition= { Bool = { "aws:SecureTransport" = false } }
-    } : null,
+    for statement in [
+      var.deny_insecure_transport ? {
+        Sid       = "DenyInsecureTransport",
+        Effect    = "Deny",
+        Principal = "*",
+        Action    = "s3:*",
+        Resource  = [aws_s3_bucket.this.arn, "${aws_s3_bucket.this.arn}/*"],
+        Condition = { Bool = { "aws:SecureTransport" = false } }
+      } : null,
 
-    var.require_sse_kms && var.kms_key_arn != null ? {
-      Sid      = "DenyUnEncryptedUploads",
-      Effect   = "Deny",
-      Principal= "*",
-      Action   = ["s3:PutObject"],
-      Resource = "${aws_s3_bucket.this.arn}/*",
-      Condition= {
-        StringNotEquals = { "s3:x-amz-server-side-encryption" = "aws:kms" },
-      }
-    } : null,
+      var.require_sse_kms && var.kms_key_arn != null ? {
+        Sid       = "DenyUnEncryptedUploads",
+        Effect    = "Deny",
+        Principal = "*",
+        Action    = ["s3:PutObject"],
+        Resource  = "${aws_s3_bucket.this.arn}/*",
+        Condition = {
+          StringNotEquals = { "s3:x-amz-server-side-encryption" = "aws:kms" },
+        }
+      } : null,
 
-    var.require_sse_kms && var.kms_key_arn != null ? {
-      Sid      = "DenyWrongKmsKey",
-      Effect   = "Deny",
-      Principal= "*",
-      Action   = ["s3:PutObject"],
-      Resource = "${aws_s3_bucket.this.arn}/*",
-      Condition= {
-        StringNotEquals = { "s3:x-amz-server-side-encryption-aws-kms-key-id" = var.kms_key_arn }
-      }
-    } : null
+      var.require_sse_kms && var.kms_key_arn != null ? {
+        Sid       = "DenyWrongKmsKey",
+        Effect    = "Deny",
+        Principal = "*",
+        Action    = ["s3:PutObject"],
+        Resource  = "${aws_s3_bucket.this.arn}/*",
+        Condition = {
+          StringNotEquals = { "s3:x-amz-server-side-encryption-aws-kms-key-id" = var.kms_key_arn }
+        }
+      } : null
+    ] : statement if statement != null
   ]
 
-  statements_access = compact(concat(
+  statements_access = concat(
     length(local.writers) > 0 ? [{
       Sid       = "AllowListForWriters",
       Effect    = "Allow",
@@ -192,13 +194,13 @@ locals {
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.admin}*",
       ]
     }] : []
-  ))
+  )
 }
 
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = jsonencode({
     Version   = "2012-10-17",
-    Statement = compact(concat(local.statements_base, local.statements_access))
+    Statement = concat(local.statements_base, local.statements_access)
   })
 }

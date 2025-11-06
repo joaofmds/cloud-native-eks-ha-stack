@@ -31,7 +31,7 @@ output "registry_id" {
 
 output "region" {
   description = "AWS region where the ECR repositories are located"
-  value       = data.aws_region.this.name
+  value       = data.aws_region.this.id
 }
 
 output "lifecycle_policies" {
