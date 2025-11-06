@@ -80,6 +80,14 @@ releases:
         command: kubectl
         args: ["apply", "-f", "observability/grafana/dashboards/whoami-sli-cm.yaml"]
 
+  - name: whoami-slo-rules
+    namespace: monitoring
+    chart: ./charts/prometheus-rules
+    needs:
+      - monitoring/kube-prometheus-stack
+    values:
+      - observability/prometheus-rules/slo-whoami.yaml
+
   - name: loki
     namespace: monitoring
     chart: grafana/loki
