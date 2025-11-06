@@ -87,6 +87,12 @@ variable "node_security_group_id" {
   default     = null
 }
 
+variable "enable_node_security_group_rule" {
+  description = "Create the worker node -> control plane security group rule"
+  type        = bool
+  default     = false
+}
+
 variable "enable_core_addons" {
   description = "Enable core EKS add-ons (VPC-CNI, CoreDNS, kube-proxy)"
   type        = bool

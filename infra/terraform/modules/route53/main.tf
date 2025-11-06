@@ -214,10 +214,12 @@ locals {
     ttl     = r.ttl
     records = r.records
   }]
+
+  any_zone_available = var.create_public_zone || local.using_existing_public_zone || var.create_private_zone
 }
 
 resource "aws_route53_record" "simple" {
-  for_each = (local.public_zone_id != null || local.private_zone_id != null) ? { for i, r in local.simple_records : i => r } : {}
+  for_each = local.any_zone_available ? { for i, r in local.simple_records : i => r } : {}
   zone_id  = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name     = each.value.name
   type     = each.value.type
@@ -237,7 +239,7 @@ resource "aws_route53_health_check" "failover" {
 }
 
 resource "aws_route53_record" "failover" {
-  for_each       = (local.public_zone_id != null || local.private_zone_id != null) ? { for i, r in var.failover_records : i => r } : {}
+  for_each       = local.any_zone_available ? { for i, r in var.failover_records : i => r } : {}
   zone_id        = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name           = contains(each.value.name, ".") ? each.value.name : "${each.value.name}.${var.zone_name}"
   type           = each.value.type
@@ -251,7 +253,7 @@ resource "aws_route53_record" "failover" {
 }
 
 resource "aws_route53_record" "acm" {
-  for_each = (local.public_zone_id != null || local.private_zone_id != null) ? var.acm_validation_records : {}
+  for_each = local.any_zone_available ? var.acm_validation_records : {}
   zone_id  = local.public_zone_id != null ? local.public_zone_id : local.private_zone_id
   name     = each.key
   type     = "CNAME"

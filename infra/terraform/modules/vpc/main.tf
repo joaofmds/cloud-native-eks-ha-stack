@@ -9,11 +9,26 @@ data "aws_availability_zones" "available" {
 locals {
   name_prefix = var.name_prefix
   azs         = slice(data.aws_availability_zones.available.names, 0, var.az_count)
+  az_count    = length(local.azs)
 
-  public_subnet_indexes   = [for i in range(length(local.azs)) : i]
-  private_subnet_indexes  = [for i in range(length(local.azs)) : i + 100]
-  intra_subnet_indexes    = [for i in range(length(local.azs)) : i + 200]
-  database_subnet_indexes = [for i in range(length(local.azs)) : i + 300]
+  subnet_group_count   = 2 + (var.create_intra_subnets ? 1 : 0) + (var.create_database_subnets ? 1 : 0)
+  subnet_slot_capacity = pow(2, var.subnet_newbits)
+
+  subnet_group_offsets = {
+    public   = 0
+    private  = 1
+    intra    = 2
+    database = 2 + (var.create_intra_subnets ? 1 : 0)
+  }
+
+  public_subnet_indexes  = [for i in range(local.az_count) : i + local.az_count * local.subnet_group_offsets.public]
+  private_subnet_indexes = [for i in range(local.az_count) : i + local.az_count * local.subnet_group_offsets.private]
+  intra_subnet_indexes = var.create_intra_subnets ? [
+    for i in range(local.az_count) : i + local.az_count * local.subnet_group_offsets.intra
+  ] : []
+  database_subnet_indexes = var.create_database_subnets ? [
+    for i in range(local.az_count) : i + local.az_count * local.subnet_group_offsets.database
+  ] : []
 
   public_subnet_cidrs = [
     for i in local.public_subnet_indexes :
@@ -50,13 +65,16 @@ locals {
     },
     local.eks_cluster_tags,
   ) : {}
-  
+
   common_tags = merge({
     "ManagedBy"   = "Terraform",
     "Project"     = var.project,
     "Environment" = var.environment,
     "Owner"       = var.owner,
   }, var.tags)
+
+  normalized_flow_logs_destination_type = var.flow_logs_destination_type == "cloudwatch" ? "cloud-watch-logs" : var.flow_logs_destination_type
+  flow_logs_use_cloudwatch              = local.normalized_flow_logs_destination_type == "cloud-watch-logs"
 }
 
 resource "aws_vpc" "this" {
@@ -69,6 +87,13 @@ resource "aws_vpc" "this" {
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-vpc"
   })
+
+  lifecycle {
+    precondition {
+      condition     = local.subnet_slot_capacity >= local.az_count * local.subnet_group_count
+      error_message = "subnet_newbits is too small for the requested number of subnets across availability zones"
+    }
+  }
 }
 
 resource "aws_vpc_ipv6_cidr_block_association" "this" {
@@ -288,7 +313,7 @@ resource "aws_vpc_endpoint" "interface" {
 
 # ── Flow Logs ─────────────────────────────────────────────────────────────────
 resource "aws_iam_role" "flowlogs" {
-  count = var.flow_logs_destination_type == "cloudwatch" ? 1 : 0
+  count = local.flow_logs_use_cloudwatch ? 1 : 0
   name  = "${local.name_prefix}-vpc-flowlogs-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -302,7 +327,7 @@ resource "aws_iam_role" "flowlogs" {
 }
 
 resource "aws_iam_role_policy" "flowlogs" {
-  count = var.flow_logs_destination_type == "cloudwatch" ? 1 : 0
+  count = local.flow_logs_use_cloudwatch ? 1 : 0
   name  = "${local.name_prefix}-vpc-flowlogs-policy"
   role  = aws_iam_role.flowlogs[0].id
   policy = jsonencode({
@@ -316,7 +341,7 @@ resource "aws_iam_role_policy" "flowlogs" {
 }
 
 resource "aws_cloudwatch_log_group" "flowlogs" {
-  count             = var.flow_logs_destination_type == "cloudwatch" ? 1 : 0
+  count             = local.flow_logs_use_cloudwatch ? 1 : 0
   name              = "/vpc/${local.name_prefix}/flow-logs"
   retention_in_days = var.flow_logs_cw_retention_days
   kms_key_id        = var.flow_logs_kms_key_arn != null ? var.flow_logs_kms_key_arn : null
@@ -324,12 +349,12 @@ resource "aws_cloudwatch_log_group" "flowlogs" {
 }
 
 resource "aws_flow_log" "this" {
-  log_destination_type = var.flow_logs_destination_type
+  log_destination_type = local.normalized_flow_logs_destination_type
   traffic_type         = "ALL"
   vpc_id               = aws_vpc.this.id
 
-  log_destination = var.flow_logs_destination_type == "s3" ? var.flow_logs_s3_arn : (var.flow_logs_destination_type == "cloudwatch" ? aws_cloudwatch_log_group.flowlogs[0].arn : null)
-  iam_role_arn    = var.flow_logs_destination_type == "cloudwatch" ? aws_iam_role.flowlogs[0].arn : null
+  log_destination = local.normalized_flow_logs_destination_type == "s3" ? var.flow_logs_s3_arn : (local.flow_logs_use_cloudwatch ? aws_cloudwatch_log_group.flowlogs[0].arn : null)
+  iam_role_arn    = local.flow_logs_use_cloudwatch ? aws_iam_role.flowlogs[0].arn : null
 
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-vpc-flowlogs" })
 }
