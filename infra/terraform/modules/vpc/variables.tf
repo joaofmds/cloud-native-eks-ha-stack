@@ -95,12 +95,12 @@ variable "interface_endpoints" {
 
 # Flow Logs
 variable "flow_logs_destination_type" {
-  description = "'s3' or 'cloudwatch'"
+  description = "Destination for flow logs ('s3', 'cloudwatch', or 'cloud-watch-logs')"
   type        = string
   default     = "s3"
   validation {
-    condition     = contains(["s3", "cloudwatch"], var.flow_logs_destination_type)
-    error_message = "flow_logs_destination_type must be 's3' or 'cloudwatch'"
+    condition     = contains(["s3", "cloudwatch", "cloud-watch-logs"], var.flow_logs_destination_type)
+    error_message = "flow_logs_destination_type must be 's3', 'cloudwatch', or 'cloud-watch-logs'"
   }
 }
 

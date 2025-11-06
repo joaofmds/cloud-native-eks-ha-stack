@@ -145,6 +145,7 @@ module "cluster" {
   secrets_kms_key_arn               = var.secrets_kms_key_arn
   security_group_additional_ingress = var.security_group_additional_ingress
   node_security_group_id = local.create_nodegroups ? aws_security_group.nodes[0].id : null
+  enable_node_security_group_rule = local.create_nodegroups
 
   enable_core_addons       = var.enable_core_addons
   addon_vpc_cni_version    = var.addon_vpc_cni_version

@@ -26,7 +26,7 @@ resource "aws_security_group" "cluster" {
 }
 
 resource "aws_security_group_rule" "cluster_from_nodes" {
-  count = var.node_security_group_id != null ? 1 : 0
+  for_each = var.enable_node_security_group_rule ? { default = var.node_security_group_id } : {}
 
   description              = "Allow worker nodes to communicate with the Kubernetes API"
   type                     = "ingress"
@@ -34,7 +34,7 @@ resource "aws_security_group_rule" "cluster_from_nodes" {
   to_port                  = 443
   protocol                 = "tcp"
   security_group_id        = aws_security_group.cluster.id
-  source_security_group_id = var.node_security_group_id
+  source_security_group_id = each.value
 }
 
 resource "aws_security_group_rule" "cluster_extra_ingress_cidr" {

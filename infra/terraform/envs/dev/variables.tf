@@ -89,7 +89,7 @@ variable "vpc_interface_endpoints" {
 }
 
 variable "vpc_flow_logs_destination_type" {
-  description = "Destination for flow logs (s3 or cloudwatch)"
+  description = "Destination for flow logs ('s3', 'cloudwatch', or 'cloud-watch-logs')"
   type        = string
   default     = "s3"
 }
