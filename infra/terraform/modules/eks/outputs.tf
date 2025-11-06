@@ -178,9 +178,6 @@ output "common_tags" {
 
 # ── Data Sources for Context ──────────────────────────────────────────
 
-data "aws_region" "current" {}
-data "aws_caller_identity" "current" {}
-
 output "aws_account_id" {
   description = "AWS Account ID where the EKS cluster is deployed"
   value       = data.aws_caller_identity.current.account_id

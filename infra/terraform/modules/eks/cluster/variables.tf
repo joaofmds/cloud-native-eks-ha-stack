@@ -24,7 +24,7 @@ variable "tags" {
   default     = {}
 }
 
-variable "version" {
+variable "kubernetes_version" {
   description = "EKS Kubernetes version (e.g., 1.32)"
   type        = string
 }

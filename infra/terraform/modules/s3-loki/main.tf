@@ -80,7 +80,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     for_each = {
       for k, v in local.default_prefixes : k => {
         prefix = v
-        cfg    = lookup(var.lifecycle, k, null)
+        cfg    = lookup(var.lifecycle_rules, k, null)
       }
     }
 

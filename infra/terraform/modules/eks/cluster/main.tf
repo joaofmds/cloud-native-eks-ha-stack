@@ -65,7 +65,7 @@ resource "aws_security_group_rule" "cluster_extra_ingress_sg" {
 
 resource "aws_eks_cluster" "this" {
   name                      = var.name
-  version                   = var.version
+  version                   = var.kubernetes_version
   role_arn                  = aws_iam_role.cluster.arn
   enabled_cluster_log_types = var.cluster_log_types
 

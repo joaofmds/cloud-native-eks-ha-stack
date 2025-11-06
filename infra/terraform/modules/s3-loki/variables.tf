@@ -83,7 +83,7 @@ variable "prefixes" {
   default = {}
 }
 
-variable "lifecycle" {
+variable "lifecycle_rules" {
   description = "Lifecycle settings per prefix (days to expire/transition). Avoid Glacier if you need on-demand queries."
   type = object({
     chunks = object({ expire_after_days = number, transition_to_ia_after_days = optional(number) })

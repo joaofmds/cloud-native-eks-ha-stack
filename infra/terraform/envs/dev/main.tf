@@ -1,6 +1,13 @@
 locals {
   name_prefix = "${var.project}-${var.environment}"
 
+  route53_public_zone_id = coalesce(
+    var.route53_existing_public_zone_id,
+    try(module.route53.public_zone_id, null)
+  )
+  
+  route53_zone_ids = local.route53_public_zone_id != null ? [local.route53_public_zone_id] : []
+
   private_zone_associations = var.route53_create_private_zone ? concat(
     [
       {
@@ -139,14 +146,15 @@ module "iam" {
   external_dns = {
     namespace       = var.iam_external_dns_namespace
     service_account = var.iam_external_dns_service_account
-    zone_ids        = var.iam_external_dns_zone_ids
+    zone_ids        = local.route53_zone_ids
   }
 
+  # Cert Manager - Usa zone_ids calculado automaticamente
   enable_cert_manager = var.iam_enable_cert_manager
   cert_manager = {
     namespace       = var.iam_cert_manager_namespace
     service_account = var.iam_cert_manager_service_account
-    zone_ids        = var.iam_cert_manager_zone_ids
+    zone_ids        = local.route53_zone_ids
   }
 
   enable_cluster_autoscaler = var.iam_enable_cluster_autoscaler

@@ -125,8 +125,8 @@ resource "aws_security_group_rule" "nodes_egress_dns_udp" {
 module "cluster" {
   source = "./cluster"
 
-  name    = var.cluster_name
-  version = var.cluster_version
+  name               = var.cluster_name
+  kubernetes_version = var.cluster_version
 
   project     = var.project
   environment = var.environment
