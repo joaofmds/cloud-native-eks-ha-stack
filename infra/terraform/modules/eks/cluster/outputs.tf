@@ -23,9 +23,19 @@ output "cluster_platform_version" {
   value       = aws_eks_cluster.this.platform_version
 }
 
-output "cluster_ca_certificate" {
+output "cluster_status" {
+  description = "Status of the EKS cluster (CREATING, ACTIVE, DELETING, FAILED)"
+  value       = aws_eks_cluster.this.status
+}
+
+output "cluster_certificate_authority_data" {
   description = "Base64 encoded certificate data required to communicate with the cluster"
   value       = aws_eks_cluster.this.certificate_authority[0].data
+}
+
+output "oidc_provider_url" {
+  description = "URL of the OIDC Identity Provider associated with the EKS cluster"
+  value       = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
 output "cluster_security_group_id" {
@@ -45,7 +55,7 @@ output "cluster_iam_role_arn" {
 
 output "oidc_provider_arn" {
   description = "ARN of the OIDC identity provider for the EKS cluster"
-  value       = aws_iam_openid_connect_provider.this.arn
+  value       = "arn:aws:iam::${data.aws_caller_identity.this.account_id}:oidc-provider/${replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")}"
 }
 
 output "oidc_issuer_url" {

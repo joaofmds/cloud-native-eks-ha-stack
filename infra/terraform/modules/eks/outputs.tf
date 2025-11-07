@@ -75,7 +75,7 @@ output "cluster_iam_role_name" {
 
 output "nodegroup_names" {
   description = "List of EKS node group names"
-  value       = var.enable_nodegroups ? module.nodegroups[0].nodegroup_names : []
+  value       = var.enable_nodegroups ? keys(module.nodegroups[0].nodegroup_names) : []
 }
 
 output "nodegroup_arns" {
@@ -85,7 +85,7 @@ output "nodegroup_arns" {
 
 output "nodegroup_statuses" {
   description = "Map of node group names to their current status"
-  value       = var.enable_nodegroups ? module.nodegroups[0].nodegroup_statuses : {}
+  value       = var.enable_nodegroups ? module.nodegroups[0].nodegroup_status : {}
 }
 
 output "nodegroup_capacity_types" {

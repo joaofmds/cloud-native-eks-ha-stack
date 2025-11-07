@@ -353,7 +353,7 @@ resource "aws_flow_log" "this" {
   traffic_type         = "ALL"
   vpc_id               = aws_vpc.this.id
 
-  log_destination = local.normalized_flow_logs_destination_type == "s3" ? var.flow_logs_s3_arn : (local.flow_logs_use_cloudwatch ? aws_cloudwatch_log_group.flowlogs[0].arn : null)
+  log_destination = local.normalized_flow_logs_destination_type == "s3" && var.flow_logs_s3_arn != null ? var.flow_logs_s3_arn : (local.flow_logs_use_cloudwatch ? aws_cloudwatch_log_group.flowlogs[0].arn : null)
   iam_role_arn    = local.flow_logs_use_cloudwatch ? aws_iam_role.flowlogs[0].arn : null
 
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-vpc-flowlogs" })

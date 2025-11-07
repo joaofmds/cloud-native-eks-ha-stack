@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "external_dns" {
   dynamic "statement" {
     for_each = length(try(var.external_dns.zone_ids, [])) > 0 ? var.external_dns.zone_ids : ["*"]
     content {
-      sid       = "ChangeRecords-${statement.value}"
+      sid       = statement.value == "*" ? "ChangeRecordsAll" : "ChangeRecords${replace(replace(statement.value, "/", ""), "-", "")}"
       actions   = ["route53:ChangeResourceRecordSets"]
       resources = statement.value == "*" ? ["*"] : ["arn:aws:route53:::hostedzone/${statement.value}"]
     }

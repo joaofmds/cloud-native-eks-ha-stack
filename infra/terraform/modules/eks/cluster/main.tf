@@ -25,17 +25,18 @@ resource "aws_security_group" "cluster" {
   tags = merge(local.common_tags, { Name = "${var.name}-cluster-sg" })
 }
 
-resource "aws_security_group_rule" "cluster_from_nodes" {
-  for_each = var.enable_node_security_group_rule ? { default = var.node_security_group_id } : {}
-
-  description              = "Allow worker nodes to communicate with the Kubernetes API"
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.cluster.id
-  source_security_group_id = each.value
-}
+# Temporariamente comentado - regra já existe
+# resource "aws_security_group_rule" "cluster_from_nodes" {
+#   for_each = var.enable_node_security_group_rule ? { default = var.node_security_group_id } : {}
+# 
+#   description              = "Allow worker nodes to communicate with the Kubernetes API"
+#   type                     = "ingress"
+#   from_port                = 443
+#   to_port                  = 443
+#   protocol                 = "tcp"
+#   security_group_id        = aws_security_group.cluster.id
+#   source_security_group_id = each.value
+# }
 
 resource "aws_security_group_rule" "cluster_extra_ingress_cidr" {
   for_each = {
@@ -123,12 +124,13 @@ data "tls_certificate" "oidc" {
   url = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
-resource "aws_iam_openid_connect_provider" "this" {
-  url             = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.oidc.certificates[0].sha1_fingerprint]
-  tags            = local.common_tags
-}
+# Temporariamente comentado - OIDC provider já existe
+# resource "aws_iam_openid_connect_provider" "this" {
+#   url             = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.oidc.certificates[0].sha1_fingerprint]
+#   tags            = local.common_tags
+# }
 
 
 

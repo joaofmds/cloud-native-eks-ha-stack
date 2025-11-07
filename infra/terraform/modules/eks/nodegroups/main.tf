@@ -117,7 +117,7 @@ resource "aws_eks_node_group" "this" {
   for_each        = local.resolved
   cluster_name    = var.cluster_name
   node_group_name = each.value._name
-  node_role_arn   = try(each.value.node_role_name_override, "") != "" ? "arn:aws:iam::${data.aws_caller_identity.this.account_id}:role/${each.value.node_role_name_override}" : aws_iam_role.node[each.key].arn
+  node_role_arn   = each.value.node_role_name_override != null && each.value.node_role_name_override != "" ? "arn:aws:iam::${data.aws_caller_identity.this.account_id}:role/${each.value.node_role_name_override}" : aws_iam_role.node[each.key].arn
 
   subnet_ids     = var.subnet_ids
   capacity_type  = upper(each.value.capacity_type)
