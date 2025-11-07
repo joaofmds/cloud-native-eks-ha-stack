@@ -169,6 +169,7 @@ module "nodegroups" {
   tags        = local.common_tags
 
   subnet_ids = var.nodegroup_subnet_ids
+  default_security_group_id = aws_security_group.nodes[0].id
 
   nodegroups = var.nodegroups
 

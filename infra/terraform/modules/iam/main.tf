@@ -261,10 +261,124 @@ resource "aws_iam_role" "aws_lb_controller" {
   tags = local.common_tags
 }
 
+data "aws_iam_policy_document" "aws_lb_controller" {
+  count = var.enable_aws_load_balancer_controller ? 1 : 0
+  
+  statement {
+    sid = "ALBIngressController1"
+    actions = [
+      "acm:ListCertificates",
+      "acm:DescribeCertificate",
+      "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:CreateSecurityGroup",
+      "ec2:CreateTags",
+      "ec2:DeleteTags",
+      "ec2:DeleteSecurityGroup",
+      "ec2:DescribeAccountAttributes",
+      "ec2:DescribeAddresses",
+      "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeInstances",
+      "ec2:DescribeInstanceStatus",
+      "ec2:DescribeInternetGateways",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSubnets",
+      "ec2:DescribeTags",
+      "ec2:DescribeVpcs",
+      "ec2:ModifyInstanceAttribute",
+      "ec2:ModifyNetworkInterfaceAttribute",
+      "ec2:RevokeSecurityGroupIngress"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController2"
+    actions = [
+      "elasticloadbalancing:*"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController3"
+    actions = [
+      "iam:CreateServiceLinkedRole",
+      "iam:GetServerCertificate",
+      "iam:ListServerCertificates"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController4"
+    actions = [
+      "cognito-idp:DescribeUserPoolClient"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController5"
+    actions = [
+      "waf-regional:GetWebACL",
+      "waf-regional:GetWebACLForResource",
+      "waf-regional:AssociateWebACL",
+      "waf-regional:DisassociateWebACL",
+      "waf:GetWebACL",
+      "wafv2:GetWebACL",
+      "wafv2:GetWebACLForResource",
+      "wafv2:AssociateWebACL",
+      "wafv2:DisassociateWebACL"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController6"
+    actions = [
+      "tag:GetResources",
+      "tag:TagResources"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController7"
+    actions = [
+      "waf:GetWebACL"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ALBIngressController8"
+    actions = [
+      "shield:DescribeProtection",
+      "shield:GetSubscriptionState",
+      "shield:DescribeSubscription",
+      "shield:CreateProtection",
+      "shield:DeleteProtection"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "aws_lb_controller" {
+  count  = var.enable_aws_load_balancer_controller ? 1 : 0
+  name   = "AWSLoadBalancerControllerIAMPolicy"
+  policy = data.aws_iam_policy_document.aws_lb_controller[0].json
+  tags   = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_iam_role_policy_attachment" "aws_lb_controller_attach" {
   count      = var.enable_aws_load_balancer_controller ? 1 : 0
   role       = aws_iam_role.aws_lb_controller[0].name
-  policy_arn = "arn:aws:iam::aws:policy/AWSLoadBalancerControllerIAMPolicy" # available in many regions
+  policy_arn = aws_iam_policy.aws_lb_controller[0].arn
 }
 
 locals {

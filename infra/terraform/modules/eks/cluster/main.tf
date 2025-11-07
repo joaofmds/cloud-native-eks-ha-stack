@@ -25,9 +25,9 @@ resource "aws_security_group" "cluster" {
   tags = merge(local.common_tags, { Name = "${var.name}-cluster-sg" })
 }
 
-# Temporariamente comentado - regra já existe
+# Commented out - security group rule already exists in AWS
 # resource "aws_security_group_rule" "cluster_from_nodes" {
-#   for_each = var.enable_node_security_group_rule ? { default = var.node_security_group_id } : {}
+#   for_each = var.enable_node_security_group_rule ? { nodes = var.node_security_group_id } : {}
 # 
 #   description              = "Allow worker nodes to communicate with the Kubernetes API"
 #   type                     = "ingress"
@@ -124,13 +124,12 @@ data "tls_certificate" "oidc" {
   url = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
-# Temporariamente comentado - OIDC provider já existe
-# resource "aws_iam_openid_connect_provider" "this" {
-#   url             = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
-#   client_id_list  = ["sts.amazonaws.com"]
-#   thumbprint_list = [data.tls_certificate.oidc.certificates[0].sha1_fingerprint]
-#   tags            = local.common_tags
-# }
+resource "aws_iam_openid_connect_provider" "this" {
+  url             = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.oidc.certificates[0].sha1_fingerprint]
+  tags            = local.common_tags
+}
 
 
 

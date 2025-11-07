@@ -349,12 +349,14 @@ resource "aws_cloudwatch_log_group" "flowlogs" {
 }
 
 resource "aws_flow_log" "this" {
+  count = local.flow_logs_use_cloudwatch ? 1 : 0
+  
   log_destination_type = local.normalized_flow_logs_destination_type
   traffic_type         = "ALL"
   vpc_id               = aws_vpc.this.id
 
-  log_destination = local.normalized_flow_logs_destination_type == "s3" && var.flow_logs_s3_arn != null ? var.flow_logs_s3_arn : (local.flow_logs_use_cloudwatch ? aws_cloudwatch_log_group.flowlogs[0].arn : null)
-  iam_role_arn    = local.flow_logs_use_cloudwatch ? aws_iam_role.flowlogs[0].arn : null
+  log_destination = aws_cloudwatch_log_group.flowlogs[0].arn
+  iam_role_arn    = aws_iam_role.flowlogs[0].arn
 
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-vpc-flowlogs" })
 }

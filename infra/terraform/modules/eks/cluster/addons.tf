@@ -8,7 +8,7 @@ resource "aws_eks_addon" "vpc_cni" {
   tags = local.common_tags
 }
 
-# Temporariamente comentado - addon já existe
+# Commented out - CoreDNS addon is in DEGRADED state, fix manually first
 # resource "aws_eks_addon" "coredns" {
 #   count     = var.enable_core_addons ? 1 : 0
 #   cluster_name  = aws_eks_cluster.this.name

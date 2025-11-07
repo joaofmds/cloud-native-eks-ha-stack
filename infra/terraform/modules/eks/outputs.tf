@@ -2,7 +2,7 @@
 
 output "cluster_name" {
   description = "Name of the EKS cluster"
-  value       = var.enable_nodegroups ? module.cluster.cluster_name : null
+  value       = module.cluster.cluster_name
 }
 
 output "cluster_arn" {
@@ -41,12 +41,12 @@ output "cluster_certificate_authority_data" {
 
 output "oidc_provider_arn" {
   description = "ARN of the OIDC Identity Provider associated with the EKS cluster"
-  value       = var.enable_nodegroups ? module.cluster.oidc_provider_arn : null
+  value       = module.cluster.oidc_provider_arn
 }
 
 output "oidc_provider_url" {
   description = "URL of the OIDC Identity Provider associated with the EKS cluster"
-  value       = var.enable_nodegroups ? module.cluster.oidc_provider_url : null
+  value       = module.cluster.oidc_provider_url
 }
 
 # ── Cluster Security Outputs ──────────────────────────────────────────

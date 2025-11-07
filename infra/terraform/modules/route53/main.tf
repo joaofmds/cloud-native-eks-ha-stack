@@ -54,16 +54,15 @@ resource "aws_route53_vpc_association_authorization" "private" {
   lifecycle { create_before_destroy = true }
 }
 
-# Temporariamente comentado para evitar conflito - a associação já existe
-# resource "aws_route53_zone_association" "private" {
-#   for_each = var.create_private_zone ? {
-#     for idx, v in var.private_zone_vpc_associations : idx => v
-#   } : {}
-#   zone_id    = aws_route53_zone.private[0].zone_id
-#   vpc_id     = each.value.vpc_id
-#   vpc_region = try(each.value.vpc_region, data.aws_region.this.id)
-#   depends_on = [aws_route53_vpc_association_authorization.private]
-# }
+resource "aws_route53_zone_association" "private" {
+  for_each = var.create_private_zone ? {
+    for idx, v in var.private_zone_vpc_associations : idx => v
+  } : {}
+  zone_id    = aws_route53_zone.private[0].zone_id
+  vpc_id     = each.value.vpc_id
+  vpc_region = try(each.value.vpc_region, data.aws_region.this.id)
+  depends_on = [aws_route53_vpc_association_authorization.private]
+}
 
 resource "aws_kms_key" "dnssec" {
   count                   = var.enable_dnssec && var.create_dnssec_kms_key && var.dnssec_kms_key_arn == null && var.create_public_zone ? 1 : 0

@@ -55,7 +55,7 @@ output "cluster_iam_role_arn" {
 
 output "oidc_provider_arn" {
   description = "ARN of the OIDC identity provider for the EKS cluster"
-  value       = "arn:aws:iam::${data.aws_caller_identity.this.account_id}:oidc-provider/${replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")}"
+  value       = aws_iam_openid_connect_provider.this.arn
 }
 
 output "oidc_issuer_url" {
