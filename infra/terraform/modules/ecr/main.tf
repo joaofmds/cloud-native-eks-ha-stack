@@ -47,17 +47,17 @@ resource "aws_ecr_lifecycle_policy" "this" {
       rules = [
         for rule in [
           try(each.value.lifecycle_keep_last, null) != null ? {
-          rulePriority = 1,
-          description  = "keep last N images",
-          selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = each.value.lifecycle_keep_last },
-          action       = { type = "expire" }
-        } : null,
+            rulePriority = 1,
+            description  = "keep last N images",
+            selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = each.value.lifecycle_keep_last },
+            action       = { type = "expire" }
+          } : null,
           try(each.value.lifecycle_expire_untagged_days, null) != null ? {
-          rulePriority = 2,
-          description  = "expire untagged older than N days",
-          selection    = { tagStatus = "untagged", countType = "sinceImagePushed", countUnit = "days", countNumber = each.value.lifecycle_expire_untagged_days },
-          action       = { type = "expire" }
-        } : null
+            rulePriority = 2,
+            description  = "expire untagged older than N days",
+            selection    = { tagStatus = "untagged", countType = "sinceImagePushed", countUnit = "days", countNumber = each.value.lifecycle_expire_untagged_days },
+            action       = { type = "expire" }
+          } : null
         ] : rule if rule != null
       ]
     })

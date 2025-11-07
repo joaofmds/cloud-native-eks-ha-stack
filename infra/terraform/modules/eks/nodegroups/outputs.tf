@@ -76,10 +76,10 @@ output "total_desired_nodes" {
 
 output "launch_template_ids" {
   description = "Map of node group keys to their launch template IDs (managed or provided)"
-  value = { for k, lt in local.effective_launch_templates : k => try(lt.id, null) }
+  value       = { for k, lt in local.effective_launch_templates : k => try(lt.id, null) }
 }
 
 output "launch_template_versions" {
   description = "Map of node group keys to their launch template versions (managed or provided)"
-  value = { for k, lt in local.effective_launch_templates : k => try(lt.version, null) }
+  value       = { for k, lt in local.effective_launch_templates : k => try(lt.version, null) }
 }

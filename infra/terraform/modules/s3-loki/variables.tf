@@ -51,9 +51,9 @@ variable "force_destroy" {
 variable "access_logging" {
   description = "Enable server access logging to a target bucket/prefix"
   type = object({
-    enabled        = bool
-    target_bucket  = optional(string)
-    target_prefix  = optional(string, "access-logs/")
+    enabled       = bool
+    target_bucket = optional(string)
+    target_prefix = optional(string, "access-logs/")
   })
   default = {
     enabled = false

@@ -3,23 +3,23 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "project" { 
-  type = string
-  description = "Project tag" 
+variable "project" {
+  type        = string
+  description = "Project tag"
 }
 
-variable "environment" { 
-  type = string
+variable "environment" {
+  type        = string
   description = "Environment tag"
 }
 
-variable "owner" { 
-  type = string
+variable "owner" {
+  type        = string
   description = "Owner tag (email or team)"
 }
 
-variable "tags" { 
-  type = map(string)
+variable "tags" {
+  type    = map(string)
   default = {}
 }
 

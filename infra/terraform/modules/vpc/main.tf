@@ -97,8 +97,8 @@ resource "aws_vpc" "this" {
 }
 
 resource "aws_vpc_ipv6_cidr_block_association" "this" {
-  count      = var.enable_ipv6 ? 1 : 0
-  vpc_id     = aws_vpc.this.id
+  count             = var.enable_ipv6 ? 1 : 0
+  vpc_id            = aws_vpc.this.id
   ipv6_ipam_pool_id = null
 }
 
@@ -262,7 +262,7 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.this.id
   service_name      = "com.amazonaws.${data.aws_region.this.id}.s3"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = concat(
+  route_table_ids = concat(
     [aws_route_table.public.id],
     values(aws_route_table.private)[*].id,
     values(aws_route_table.intra)[*].id,
@@ -276,7 +276,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = aws_vpc.this.id
   service_name      = "com.amazonaws.${data.aws_region.this.id}.dynamodb"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = concat(
+  route_table_ids = concat(
     [aws_route_table.public.id],
     values(aws_route_table.private)[*].id,
     values(aws_route_table.intra)[*].id,
@@ -301,14 +301,14 @@ resource "aws_security_group" "vpce" {
 }
 
 resource "aws_vpc_endpoint" "interface" {
-  for_each          = toset(var.interface_endpoints)
-  vpc_id            = aws_vpc.this.id
-  service_name      = "com.amazonaws.${data.aws_region.this.id}.${each.value}"
-  vpc_endpoint_type = "Interface"
+  for_each            = toset(var.interface_endpoints)
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${data.aws_region.this.id}.${each.value}"
+  vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
-  subnet_ids        = values(aws_subnet.private)[*].id
-  security_group_ids = length(var.interface_endpoints) > 0 ? [aws_security_group.vpce[0].id] : []
-  tags = merge(local.common_tags, { Name = "${local.name_prefix}-vpce-${each.value}" })
+  subnet_ids          = values(aws_subnet.private)[*].id
+  security_group_ids  = length(var.interface_endpoints) > 0 ? [aws_security_group.vpce[0].id] : []
+  tags                = merge(local.common_tags, { Name = "${local.name_prefix}-vpce-${each.value}" })
 }
 
 # ── Flow Logs ─────────────────────────────────────────────────────────────────
@@ -318,8 +318,8 @@ resource "aws_iam_role" "flowlogs" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
+      Action    = "sts:AssumeRole",
+      Effect    = "Allow",
       Principal = { Service = "vpc-flow-logs.amazonaws.com" }
     }]
   })
@@ -350,7 +350,7 @@ resource "aws_cloudwatch_log_group" "flowlogs" {
 
 resource "aws_flow_log" "this" {
   count = local.flow_logs_use_cloudwatch ? 1 : 0
-  
+
   log_destination_type = local.normalized_flow_logs_destination_type
   traffic_type         = "ALL"
   vpc_id               = aws_vpc.this.id

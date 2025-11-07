@@ -225,14 +225,14 @@ variable "eks_nodegroups" {
   }))
   default = {
     general = {
-      capacity_type   = "ON_DEMAND"
-      instance_types  = ["t3.large"]
-      min_size        = 1
-      max_size        = 3
-      desired_size    = 2
-      disk_size       = 40
-      enable_ssm      = true
-      labels          = { role = "general" }
+      capacity_type          = "ON_DEMAND"
+      instance_types         = ["t3.large"]
+      min_size               = 1
+      max_size               = 3
+      desired_size           = 2
+      disk_size              = 40
+      enable_ssm             = true
+      labels                 = { role = "general" }
       update_max_unavailable = 1
     }
   }

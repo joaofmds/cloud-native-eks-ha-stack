@@ -45,8 +45,8 @@ resource "aws_s3_bucket_ownership_controls" "this" {
 }
 
 resource "aws_s3_bucket_acl" "this" {
-  bucket = aws_s3_bucket.this.id
-  acl    = "private"
+  bucket     = aws_s3_bucket.this.id
+  acl        = "private"
   depends_on = [aws_s3_bucket_ownership_controls.this]
 }
 
@@ -67,8 +67,8 @@ resource "aws_s3_bucket_versioning" "this" {
 }
 
 resource "aws_s3_bucket_logging" "this" {
-  count  = try(var.access_logging.enabled, false) && try(var.access_logging.target_bucket, null) != null ? 1 : 0
-  bucket = aws_s3_bucket.this.id
+  count         = try(var.access_logging.enabled, false) && try(var.access_logging.target_bucket, null) != null ? 1 : 0
+  bucket        = aws_s3_bucket.this.id
   target_bucket = var.access_logging.target_bucket
   target_prefix = var.access_logging.target_prefix
 }
@@ -174,7 +174,7 @@ locals {
       Effect    = "Allow",
       Principal = { AWS = tolist(local.writers) },
       Action    = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload", "s3:ListBucketMultipartUploads"],
-      Resource  = [
+      Resource = [
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.chunks}*",
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.index}*",
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.ruler}*",
@@ -187,7 +187,7 @@ locals {
       Effect    = "Allow",
       Principal = { AWS = tolist(local.readers) },
       Action    = ["s3:GetObject"],
-      Resource  = [
+      Resource = [
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.chunks}*",
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.index}*",
         "${aws_s3_bucket.this.arn}/${local.default_prefixes.ruler}*",

@@ -263,7 +263,7 @@ resource "aws_iam_role" "aws_lb_controller" {
 
 data "aws_iam_policy_document" "aws_lb_controller" {
   count = var.enable_aws_load_balancer_controller ? 1 : 0
-  
+
   statement {
     sid = "ALBIngressController1"
     actions = [

@@ -1,11 +1,11 @@
 resource "aws_eks_addon" "vpc_cni" {
-  count     = var.enable_core_addons ? 1 : 0
-  cluster_name  = aws_eks_cluster.this.name
-  addon_name    = "vpc-cni"
-  addon_version = var.addon_vpc_cni_version
+  count                       = var.enable_core_addons ? 1 : 0
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "vpc-cni"
+  addon_version               = var.addon_vpc_cni_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  tags = local.common_tags
+  tags                        = local.common_tags
 }
 
 # Commented out - CoreDNS addon is in DEGRADED state, fix manually first
@@ -21,12 +21,12 @@ resource "aws_eks_addon" "vpc_cni" {
 # }
 
 resource "aws_eks_addon" "kube_proxy" {
-  count     = var.enable_core_addons ? 1 : 0
-  cluster_name  = aws_eks_cluster.this.name
-  addon_name    = "kube-proxy"
-  addon_version = var.addon_kube_proxy_version
+  count                       = var.enable_core_addons ? 1 : 0
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "kube-proxy"
+  addon_version               = var.addon_kube_proxy_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  depends_on = [aws_eks_cluster.this]
-  tags = local.common_tags
+  depends_on                  = [aws_eks_cluster.this]
+  tags                        = local.common_tags
 }

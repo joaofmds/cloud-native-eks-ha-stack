@@ -87,7 +87,7 @@ locals {
 resource "aws_launch_template" "managed" {
   for_each = var.default_security_group_id != null ? { for k, ng in local.resolved : k => ng if try(ng.launch_template, null) == null } : {}
 
-  name_prefix   = "${var.cluster_name}-${each.key}-"
+  name_prefix            = "${var.cluster_name}-${each.key}-"
   update_default_version = true
 
   vpc_security_group_ids = [var.default_security_group_id]

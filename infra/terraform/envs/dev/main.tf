@@ -2,7 +2,7 @@ locals {
   name_prefix = "${var.project}-${var.environment}"
 
   route53_public_zone_id = var.route53_existing_public_zone_id != null ? var.route53_existing_public_zone_id : try(module.route53.public_zone_id, null)
-  
+
   route53_zone_ids = local.route53_public_zone_id != null ? [local.route53_public_zone_id] : []
 
   private_zone_associations = var.route53_create_private_zone ? concat(

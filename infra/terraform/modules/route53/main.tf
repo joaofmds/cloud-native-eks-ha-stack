@@ -9,7 +9,7 @@ locals {
     Owner       = var.owner,
   }, var.tags)
 
-  zone_tags = merge(local.common_tags, { Name = var.zone_name })
+  zone_tags                  = merge(local.common_tags, { Name = var.zone_name })
   using_existing_public_zone = !var.create_public_zone && var.existing_public_zone_id != null
 }
 
@@ -20,11 +20,11 @@ data "aws_route53_zone" "existing_public" {
 }
 
 locals {
-  public_zone_id = var.create_public_zone ? try(aws_route53_zone.public[0].zone_id, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].zone_id : null)
-  public_zone_arn = var.create_public_zone ? try(aws_route53_zone.public[0].arn, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].arn : null)
+  public_zone_id           = var.create_public_zone ? try(aws_route53_zone.public[0].zone_id, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].zone_id : null)
+  public_zone_arn          = var.create_public_zone ? try(aws_route53_zone.public[0].arn, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].arn : null)
   public_zone_name_servers = var.create_public_zone ? try(aws_route53_zone.public[0].name_servers, null) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].name_servers : null)
-  public_zone_name = var.create_public_zone ? try(aws_route53_zone.public[0].name, var.zone_name) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].name : var.zone_name)
-  private_zone_id = var.create_private_zone ? try(aws_route53_zone.private[0].zone_id, null) : null
+  public_zone_name         = var.create_public_zone ? try(aws_route53_zone.public[0].name, var.zone_name) : (local.using_existing_public_zone ? data.aws_route53_zone.existing_public[0].name : var.zone_name)
+  private_zone_id          = var.create_private_zone ? try(aws_route53_zone.private[0].zone_id, null) : null
 }
 
 resource "aws_route53_zone" "public" {
