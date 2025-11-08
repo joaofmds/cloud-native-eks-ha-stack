@@ -101,6 +101,13 @@ resource "aws_launch_template" "managed" {
     }
   }
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+    instance_metadata_tags      = "enabled"
+  }
+
   tag_specifications {
     resource_type = "instance"
     tags = merge(local.common_tags, {
@@ -181,6 +188,15 @@ resource "aws_eks_node_group" "this" {
     ignore_changes        = [scaling_config[0].desired_size]
   }
 
+  depends_on = [aws_eks_access_entry.nodes]
+
   tags = merge(local.common_tags, { Name = "${var.cluster_name}-${each.value._name}" })
 }
 
+# EKS Access Entries for node roles (required for EKS API v2)
+resource "aws_eks_access_entry" "nodes" {
+  for_each      = { for k, ng in var.nodegroups : k => ng if !try(ng.node_role_name_override != null && ng.node_role_name_override != "", false) }
+  cluster_name  = var.cluster_name
+  principal_arn = aws_iam_role.node[each.key].arn
+  type          = "EC2_LINUX"
+}

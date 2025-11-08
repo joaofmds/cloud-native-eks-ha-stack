@@ -25,18 +25,17 @@ resource "aws_security_group" "cluster" {
   tags = merge(local.common_tags, { Name = "${var.name}-cluster-sg" })
 }
 
-# Commented out - security group rule already exists in AWS
-# resource "aws_security_group_rule" "cluster_from_nodes" {
-#   for_each = var.enable_node_security_group_rule ? { nodes = var.node_security_group_id } : {}
-# 
-#   description              = "Allow worker nodes to communicate with the Kubernetes API"
-#   type                     = "ingress"
-#   from_port                = 443
-#   to_port                  = 443
-#   protocol                 = "tcp"
-#   security_group_id        = aws_security_group.cluster.id
-#   source_security_group_id = each.value
-# }
+resource "aws_security_group_rule" "cluster_from_nodes" {
+  for_each = var.enable_node_security_group_rule ? { nodes = var.node_security_group_id } : {}
+
+  description              = "Allow worker nodes to communicate with the Kubernetes API"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cluster.id
+  source_security_group_id = each.value
+}
 
 resource "aws_security_group_rule" "cluster_extra_ingress_cidr" {
   for_each = {
@@ -70,6 +69,10 @@ resource "aws_eks_cluster" "this" {
   role_arn                  = aws_iam_role.cluster.arn
   enabled_cluster_log_types = var.cluster_log_types
 
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_public_access  = var.endpoint_public_access
@@ -86,6 +89,10 @@ resource "aws_eks_cluster" "this" {
       }
       resources = ["secrets"]
     }
+  }
+
+  lifecycle {
+    ignore_changes = [access_config]
   }
 
   tags = merge(local.common_tags, { Name = var.name })

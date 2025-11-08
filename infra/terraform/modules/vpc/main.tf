@@ -346,6 +346,10 @@ resource "aws_cloudwatch_log_group" "flowlogs" {
   retention_in_days = var.flow_logs_cw_retention_days
   kms_key_id        = var.flow_logs_kms_key_arn != null ? var.flow_logs_kms_key_arn : null
   tags              = local.common_tags
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "aws_flow_log" "this" {

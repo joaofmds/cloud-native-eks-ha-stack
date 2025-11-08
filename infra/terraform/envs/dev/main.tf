@@ -204,7 +204,13 @@ resource "aws_eks_addon" "ebs_csi_driver" {
   resolve_conflicts_on_update = "OVERWRITE"
   service_account_role_arn    = module.iam.ebs_csi_driver_role_arn
 
-  depends_on = [module.iam]
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+
+  depends_on = [module.iam, module.eks]
 
   lifecycle {
     precondition {

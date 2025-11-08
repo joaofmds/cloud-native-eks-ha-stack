@@ -10,29 +10,6 @@ locals {
   create_nodegroups = var.enable_nodegroups && length(var.nodegroups) > 0
 }
 
-data "aws_subnet" "nodegroups" {
-  for_each = local.create_nodegroups ? { for id in var.nodegroup_subnet_ids : id => id } : {}
-  id       = each.value
-}
-
-locals {
-  nodegroup_public_subnet_ids = local.create_nodegroups ? [
-    for subnet in data.aws_subnet.nodegroups : subnet.id
-    if subnet.map_public_ip_on_launch
-  ] : []
-}
-
-resource "terraform_data" "validate_nodegroup_subnets" {
-  count = local.create_nodegroups ? 1 : 0
-
-  lifecycle {
-    precondition {
-      condition     = length(local.nodegroup_public_subnet_ids) == 0
-      error_message = "Managed node groups must be deployed into private subnets without automatic public IP assignment."
-    }
-  }
-}
-
 resource "aws_security_group" "nodes" {
   count = local.create_nodegroups ? 1 : 0
 
@@ -175,7 +152,6 @@ module "nodegroups" {
 
   depends_on = [
     module.cluster,
-    terraform_data.validate_nodegroup_subnets,
     aws_security_group.nodes,
   ]
 }
@@ -183,12 +159,24 @@ module "nodegroups" {
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-resource "aws_security_group_rule" "nodes_ingress_cluster" {
+resource "aws_security_group_rule" "nodes_ingress_cluster_https" {
   count                    = local.create_nodegroups ? 1 : 0
-  description              = "Allow Kubernetes API to reach worker nodes"
+  description              = "Allow Kubernetes API to reach worker nodes on HTTPS"
   type                     = "ingress"
   from_port                = 443
   to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.nodes[0].id
+  source_security_group_id = module.cluster.cluster_security_group_id
+  depends_on               = [module.cluster]
+}
+
+resource "aws_security_group_rule" "nodes_ingress_cluster_kubelet" {
+  count                    = local.create_nodegroups ? 1 : 0
+  description              = "Allow cluster control plane to communicate with pods via kubelet"
+  type                     = "ingress"
+  from_port                = 1025
+  to_port                  = 65535
   protocol                 = "tcp"
   security_group_id        = aws_security_group.nodes[0].id
   source_security_group_id = module.cluster.cluster_security_group_id
