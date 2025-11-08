@@ -99,6 +99,17 @@ resource "aws_security_group_rule" "nodes_egress_dns_udp" {
   security_group_id = aws_security_group.nodes[0].id
 }
 
+resource "aws_security_group_rule" "nodes_egress_vpc_all" {
+  count             = local.create_nodegroups ? 1 : 0
+  description       = "Allow all outbound traffic to VPC for kubelet and other services"
+  type              = "egress"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "-1"
+  cidr_blocks       = [var.vpc_cidr_block]
+  security_group_id = aws_security_group.nodes[0].id
+}
+
 module "cluster" {
   source = "./cluster"
 
@@ -186,7 +197,7 @@ resource "aws_security_group_rule" "nodes_ingress_cluster_kubelet" {
 resource "time_sleep" "cluster_ready" {
   depends_on = [module.cluster]
 
-  create_duration = "30s"
+  create_duration = "90s"
 
   triggers = {
     cluster_name     = module.cluster.cluster_name
