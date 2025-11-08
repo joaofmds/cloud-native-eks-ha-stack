@@ -371,7 +371,7 @@ resource "aws_iam_policy" "aws_lb_controller" {
   tags   = local.common_tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

@@ -26,20 +26,20 @@ resource "aws_iam_role" "node" {
 }
 
 resource "aws_iam_role_policy_attachment" "node_AmazonEKSWorkerNodePolicy" {
-  for_each   = aws_iam_role.node
-  role       = each.value.name
+  for_each   = { for k, ng in var.nodegroups : k => ng if !try(ng.node_role_name_override != null && ng.node_role_name_override != "", false) }
+  role       = aws_iam_role.node[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_AmazonEKS_CNI_Policy" {
-  for_each   = aws_iam_role.node
-  role       = each.value.name
+  for_each   = { for k, ng in var.nodegroups : k => ng if !try(ng.node_role_name_override != null && ng.node_role_name_override != "", false) }
+  role       = aws_iam_role.node[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
 resource "aws_iam_role_policy_attachment" "node_AmazonEC2ContainerRegistryReadOnly" {
-  for_each   = aws_iam_role.node
-  role       = each.value.name
+  for_each   = { for k, ng in var.nodegroups : k => ng if !try(ng.node_role_name_override != null && ng.node_role_name_override != "", false) }
+  role       = aws_iam_role.node[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
@@ -85,12 +85,21 @@ locals {
 }
 
 resource "aws_launch_template" "managed" {
-  for_each = var.default_security_group_id != null ? { for k, ng in local.resolved : k => ng if try(ng.launch_template, null) == null } : {}
+  for_each = { for k, ng in local.resolved : k => ng if try(ng.launch_template, null) == null }
 
   name_prefix            = "${var.cluster_name}-${each.key}-"
   update_default_version = true
 
-  vpc_security_group_ids = [var.default_security_group_id]
+  vpc_security_group_ids = var.default_security_group_id != null ? [var.default_security_group_id] : []
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size = try(each.value.disk_size, 40)
+      volume_type = "gp3"
+      encrypted   = true
+    }
+  }
 
   tag_specifications {
     resource_type = "instance"
@@ -123,7 +132,7 @@ resource "aws_eks_node_group" "this" {
   capacity_type  = upper(each.value.capacity_type)
   instance_types = each.value.instance_types
   ami_type       = each.value._ami_type
-  disk_size      = try(each.value.disk_size, 40)
+  disk_size      = local.effective_launch_templates[each.key] != null ? null : try(each.value.disk_size, 40)
   version        = var.cluster_version
 
   scaling_config {
