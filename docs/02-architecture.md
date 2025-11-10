@@ -13,22 +13,22 @@ Este documento resume a arquitetura lógica da solução, os componentes AWS/Kub
 │  │   us-east-1a  │    │   us-east-1b │    │   us-east-1c │                  │
 │  │  NLB + EIPs   │    │  NLB + EIPs  │    │  NLB + EIPs  │                  │
 │  └───────────────┘    └──────────────┘    └──────────────┘                  │
-│        ▲                   ▲                   ▲                           │
-│        │                   │                   │                           │
-│        ▼                   ▼                   ▼                           │
+│        ▲                   ▲                   ▲                            │
+│        │                   │                   │                            │
+│        ▼                   ▼                   ▼                            │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
 │  │                     Managed EKS Control Plane (HA)                    │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
-│        ▲                   ▲                   ▲                           │
-│        │                   │                   │                           │
+│        ▲                   ▲                   ▲                            │
+│        │                   │                   │                            │
 │  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐                  │
 │  │ Private Subnet│    │ Private Subnet│    │ Private Subnet│                │
 │  │   us-east-1a  │    │   us-east-1b │    │   us-east-1c │                  │
 │  │ NodeGroup A   │    │ NodeGroup B  │    │ NodeGroup C  │                  │
 │  │ (on-demand)   │    │ (spot mix)   │    │ (spot mix)   │                  │
 │  └───────────────┘    └──────────────┘    └──────────────┘                  │
-│        │                   │                   │                           │
-│        ▼                   ▼                   ▼                           │
+│        │                   │                   │                            │
+│        ▼                   ▼                   ▼                            │
 │  ┌─────────────────────┐ ┌────────────────────┐ ┌─────────────────────┐     │
 │  │ ingress-nginx       │ │ observability      │ │ workloads demo      │     │
 │  │ (IRSA + HPA + PDB)  │ │ (Prom/Graf/Loki/   │ │ (whoami + policies) │     │
