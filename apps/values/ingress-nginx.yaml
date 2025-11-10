@@ -15,6 +15,22 @@ controller:
     hsts-max-age: "63072000"
     hsts-include-subdomains: "true"
     proxy-body-size: "1m"
+    enable-opentelemetry: "true"
+    otel-sampler: "AlwaysOn"
+    otel-service-name: "ingress-nginx"
+    otel-sampler-arg: ""
+    otel-collector-host: "otel-collector.monitoring.svc.cluster.local"
+    otel-collector-port: "4317"
+    otel-protocol: "grpc"
+  extraArgs:
+    enable-opentelemetry: "true"
+  extraEnv:
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "otel-collector.monitoring.svc.cluster.local:4317"
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: "grpc"
+    - name: OTEL_SERVICE_NAME
+      value: "ingress-nginx"
   service:
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
