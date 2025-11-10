@@ -1,0 +1,4 @@
+apiVersion: v2
+name: prometheus-rules
+version: 0.1.0
+description: Custom Prometheus Rules for SLO monitoring

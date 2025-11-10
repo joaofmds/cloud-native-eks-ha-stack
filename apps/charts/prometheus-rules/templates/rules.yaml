@@ -1,0 +1,12 @@
+{{- if .Values.rules }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: kube-prometheus-stack
+    prometheus: kube-prometheus
+spec:
+  groups: {{ toYaml .Values.rules.groups | nindent 4 }}
+{{- end }}
