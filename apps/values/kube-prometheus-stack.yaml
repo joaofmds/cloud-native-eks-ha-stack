@@ -41,6 +41,8 @@ prometheus:
     evaluationInterval: 30s
     enableAdminAPI: false
     walCompression: true
+    enableFeatures:
+      - exemplar-storage
     ruleSelectorNilUsesHelmValues: false
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
@@ -146,10 +148,24 @@ grafana:
       type: loki
       access: proxy
       url: http://loki.monitoring.svc.cluster.local:3100
+      uid: loki
     - name: Tempo
       type: tempo
       access: proxy
       url: http://tempo.monitoring.svc.cluster.local:3100
+      uid: tempo
+      jsonData:
+        tracesToLogs:
+          datasourceUid: loki
+          spanStartTimeShift: '-5m'
+          spanEndTimeShift: '5m'
+          tags: ['k8s.pod.name', 'k8s.namespace.name']
+        tracesToMetrics:
+          datasourceUid: prometheus
+        serviceMap:
+          datasourceUid: prometheus
+        search:
+          hide: false
   grafana.ini:
     server:
       root_url: https://grafana.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}

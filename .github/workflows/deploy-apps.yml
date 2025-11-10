@@ -26,6 +26,19 @@ permissions:
 env:
   AWS_REGION: us-east-1
   HELMFILE_ENVIRONMENT: ${{ github.event.inputs.helmfile_env || 'default' }}
+  PUBLIC_HOSTED_ZONE: ${{ secrets.PUBLIC_HOSTED_ZONE }}
+  PUBLIC_HOSTED_ZONE_ID: ${{ secrets.PUBLIC_HOSTED_ZONE_ID }}
+  ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+  CERT_MANAGER_IAM_ROLE_ARN: ${{ secrets.CERT_MANAGER_IAM_ROLE_ARN }}
+  EXTERNAL_DNS_IAM_ROLE_ARN: ${{ secrets.EXTERNAL_DNS_IAM_ROLE_ARN }}
+  LOKI_IAM_ROLE_ARN: ${{ secrets.LOKI_IAM_ROLE_ARN }}
+  TEMPO_IAM_ROLE_ARN: ${{ secrets.TEMPO_IAM_ROLE_ARN }}
+  GRAFANA_IAM_ROLE_ARN: ${{ secrets.GRAFANA_IAM_ROLE_ARN }}
+  LOKI_S3_BUCKET: ${{ secrets.LOKI_S3_BUCKET }}
+  TEMPO_S3_BUCKET: ${{ secrets.TEMPO_S3_BUCKET }}
+  GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  BASE_URL: https://whoami.${{ secrets.PUBLIC_HOSTED_ZONE }}
 
 jobs:
   deploy:
@@ -56,6 +69,34 @@ jobs:
         with:
           helmfile-version: v0.158.0
 
+      - name: Validate Helmfile environment variables
+        run: |
+          set -euo pipefail
+          required_vars=(
+            PUBLIC_HOSTED_ZONE
+            PUBLIC_HOSTED_ZONE_ID
+            ACME_EMAIL
+            CERT_MANAGER_IAM_ROLE_ARN
+            EXTERNAL_DNS_IAM_ROLE_ARN
+            LOKI_IAM_ROLE_ARN
+            TEMPO_IAM_ROLE_ARN
+            GRAFANA_IAM_ROLE_ARN
+            LOKI_S3_BUCKET
+            TEMPO_S3_BUCKET
+            GRAFANA_ADMIN_PASSWORD
+            SLACK_WEBHOOK_URL
+          )
+          missing=()
+          for var in "${required_vars[@]}"; do
+            if [ -z "${!var:-}" ]; then
+              missing+=("$var")
+            fi
+          done
+          if [ "${#missing[@]}" -ne 0 ]; then
+            printf '::error::Missing required environment variables: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
@@ -70,17 +111,31 @@ jobs:
         env:
           HELMFILE_ENVIRONMENT: ${{ env.HELMFILE_ENVIRONMENT }}
         run: |
+          set -euo pipefail
           helmfile --environment "$HELMFILE_ENVIRONMENT" apply
 
       - name: Run k6 tests
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_k6 != 'false' }}
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
         run: |
           set -euo pipefail
+          mkdir -p artifacts
           if compgen -G "k6/*.js" > /dev/null; then
             for script in k6/*.js; do
+              name=$(basename "$script" .js)
               echo "Running k6 script: $script"
-              k6 run "$script"
+              k6 run "$script" \
+                --summary-export "artifacts/${name}-summary.json" \
+                -e BASE_URL="$BASE_URL"
             done
           else
             echo "No k6 scripts found in k6/."
           fi
+
+      - name: Upload k6 summaries
+        if: ${{ (github.event_name != 'workflow_dispatch' || github.event.inputs.run_k6 != 'false') && success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summaries
+          path: artifacts/*.json

@@ -13,6 +13,8 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/enable-opentelemetry: "true"
+    nginx.ingress.kubernetes.io/opentelemetry-operation-name: "HTTP $request_method $service"
   hosts:
     - host: whoami.{{ requiredEnv "PUBLIC_HOSTED_ZONE" }}
       paths:

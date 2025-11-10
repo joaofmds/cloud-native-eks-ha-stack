@@ -25,21 +25,22 @@ kubectl get pods -n cert-manager
 kubectl get pods -n demo
 ```
 
-## Port-forward para Prometheus e Alertmanager
+## Port-forward e endpoints
 
-Prometheus:
+- **Prometheus** (caso não queira expor via port-forward):
+  ```bash
+  kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
+  ```
+- **Alertmanager**:
+  ```bash
+  kubectl port-forward -n monitoring svc/kube-prometheus-stack-alertmanager 9093:9093
+  ```
+- **Tempo** (para consultas diretas OTLP/HTTP):
+  ```bash
+  kubectl port-forward -n monitoring svc/tempo-query-frontend 16686:16686
+  ```
 
-```bash
-kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
-```
-
-Alertmanager:
-
-```bash
-kubectl port-forward -n monitoring svc/kube-prometheus-stack-alertmanager 9093:9093
-```
-
-Após executar os comandos, acesse `http://localhost:9090` (Prometheus) e `http://localhost:9093` (Alertmanager).
+O Alertmanager já está configurado com rotas para Slack (`#alerts-critical`, `#alerts-warning`, `#alerts-slo`). Defina `SLACK_WEBHOOK_URL` antes do deploy para habilitar o envio real.
 
 ## Acesso ao Grafana
 
@@ -58,9 +59,12 @@ Após o login, as fontes de dados Loki e Tempo já estarão configuradas automat
 
 ## Dashboards e Exploração
 
-* **Logs**: Utilize `Explore → Loki` para inspecionar os logs coletados via Promtail.
-* **Traces**: Utilize `Explore → Tempo` e filtre por serviços que exportam via OTEL Collector.
-* **Métricas**: Dashboards principais já incluídos pelo `kube-prometheus-stack` (Kubernetes / Nodes / API Server etc.).
+* **Métricas**: dashboards principais já incluídos pelo `kube-prometheus-stack` (Kubernetes / Nodes / API Server etc.). O painel _WhoAmI SLI_ possui links diretos para logs/traces através de exemplars.
+* **Logs**: utilize `Explore → Loki` para inspecionar eventos. Use os botões *View logs* presentes nos gráficos do dashboard para abrir a consulta já filtrada.
+* **Traces**: utilize `Explore → Tempo` e filtre por serviço `ingress-nginx`. O traço raiz é emitido pelo ingress via OpenTelemetry; downstreams podem anexar spans se estiverem instrumentados.
+* **Alertas**: acesse `https://grafana.$PUBLIC_HOSTED_ZONE/alerting` ou o próprio Alertmanager para visualizar histórico. Cada alerta inclui link para o runbook e dashboard relacionado.
+
+> Exemplars foram habilitados no Prometheus. Ao clicar em um ponto do gráfico de latência ou erro, o Grafana abre automaticamente o trace associado no Tempo.
 
 ## Troubleshooting rápido
 
@@ -76,5 +80,11 @@ Após o login, as fontes de dados Loki e Tempo já estarão configuradas automat
   ```bash
   kubectl describe networkpolicy -n demo whoami-restricted
   ```
+* Consultar status dos webhooks Slack:
+  ```bash
+  kubectl get secret -n monitoring alertmanager-kube-prometheus-stack-alertmanager -o yaml | grep SLACK
+  ```
+
+Se o alerta não chegar ao Slack, valide o webhook e o acesso de saída do namespace `monitoring` (NetworkPolicy).
 
 Com esses passos é possível validar rapidamente a saúde da stack de observabilidade e dos componentes expostos.

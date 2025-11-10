@@ -77,7 +77,7 @@ spec:
         description: |
           WhoAmI is burning error budget faster than acceptable.
           Check NGINX 5xx, pods readiness, HPA and upstreams.
-        runbook_url: "https://runbooks.example.com/slo-burn-rate"
+        runbook_url: "https://github.com/joaofmsouza/cloud-native-eks-ha-stack/blob/main/docs/05-runbooks.md#whoami-slo-burn-rate"
 
     - alert: HighLatencyP99
       expr: sli:whoami:latency_p99:5m > 0.5
@@ -89,4 +89,4 @@ spec:
       annotations:
         summary: "High P99 latency (>500ms)"
         description: "Investigate NGINX, app CPU/memory throttling, and upstream DNS."
-        runbook_url: "https://runbooks.example.com/high-latency"
+        runbook_url: "https://github.com/joaofmsouza/cloud-native-eks-ha-stack/blob/main/docs/05-runbooks.md#whoami-p99-latency"
