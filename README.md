@@ -12,8 +12,6 @@ Infraestrutura completa para disponibilizar uma aplicação web em Kubernetes (E
 6. [06 - Testes de performance com k6](docs/06-tests-k6.md)
 7. [07 - Segurança e governança](docs/07-security.md)
 
-> O vídeo de demonstração referencia essas seções na mesma ordem: provisionamento → deploy → observabilidade → testes → incidentes simulados.
-
 ## 🧱 Componentes-chave
 
 - **Infraestrutura**: Terraform modular (VPC, EKS multi-AZ, IRSA, S3 para Loki/Tempo, Route53/ACM/ACME) + pipelines GitHub Actions com OIDC.
@@ -56,11 +54,3 @@ Infraestrutura completa para disponibilizar uma aplicação web em Kubernetes (E
 
 - Scripts `k6/` cobrem smoke, stress e soak. Os cenários recomendados estão em [06-tests-k6.md](docs/06-tests-k6.md).
 - Durante os testes, simule falhas (drain de nó, queda de pod/ingress) para comprovar tolerância a falhas. Capture evidências para o relatório/vídeo.
-
-## 🎥 Demonstração
-
-O vídeo solicitado na entrega percorre: arquitetura → Terraform → Helmfile → acesso HTTPS → dashboards/logs/traces → alertas Slack → testes k6 + falhas simuladas → decisões de design. Link divulgado junto ao relatório final.
-
----
-
-> Modelo mental: Terraform garante base resiliente, Helmfile aplica aplicações, GitHub Actions automatiza, observabilidade fecha o ciclo de feedback e runbooks garantem operação contínua.
