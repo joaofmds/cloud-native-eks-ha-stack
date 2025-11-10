@@ -12,9 +12,6 @@ metadata:
     role: alert-rules
 spec:
   groups:
-  # ————————————————————————————————————————————
-  # SLI: Availability / Success Rate
-  # ————————————————————————————————————————————
   - name: whoami.sli.recording
     interval: 30s
     rules:
@@ -30,9 +27,6 @@ spec:
         /
         sum(increase(nginx_ingress_controller_requests{ingress="whoami"}[30m]))
 
-    # ————————————————————————————————————————————
-    # SLI: Latency (P95 / P99)
-    # ————————————————————————————————————————————
     - record: sli:whoami:latency_p95:5m
       expr: |
         histogram_quantile(
@@ -47,15 +41,9 @@ spec:
           sum by (le) (rate(nginx_ingress_controller_request_duration_seconds_bucket{ingress="whoami"}[5m]))
         )
 
-  # ————————————————————————————————————————————
-  # SLO Alerts
-  # ————————————————————————————————————————————
   - name: whoami.slo.alerts
     interval: 30s
     rules:
-    # Target SLO: 99.9% availability over 30d
-    # Error budget (EB) = 0.1% errors
-    # Multi‑window burn‑rate based on Google's SRE workbook
     - alert: SLOErrorBudgetBurn
       expr: |
         # fast burn (5m / 1h)
